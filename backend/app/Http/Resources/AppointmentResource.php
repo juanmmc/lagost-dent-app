@@ -1,0 +1,33 @@
+<?php
+
+namespace App\Http\Resources;
+
+use Illuminate\Http\Resources\Json\JsonResource;
+
+class AppointmentResource extends JsonResource
+{
+    public function toArray($request)
+    {
+        return [
+            'id' => $this->id,
+            'scheduled_at' => $this->scheduled_at?->toIso8601String(),
+            'status' => $this->status->value ?? null,
+            'doctor' => $this->whenLoaded('doctor', function () {
+                return [
+                    'id' => $this->doctor->id,
+                    'name' => $this->doctor->person->name ?? null,
+                ];
+            }),
+            'patient' => $this->whenLoaded('patient', function () {
+                return [
+                    'id' => $this->patient->id,
+                    'name' => $this->patient->person->name ?? null,
+                ];
+            }),
+            'diagnosis' => $this->diagnosis_text,
+            'deposit_slip_attachment_id' => $this->deposit_slip_attachment_id,
+            'recipe_attachment_id' => $this->recipe_attachment_id,
+            'rejection_reason' => $this->rejection_reason,
+        ];
+    }
+}
