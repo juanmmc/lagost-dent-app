@@ -7,6 +7,7 @@ use App\Http\Requests\Appointment\ScheduleAppointmentRequest;
 use App\Http\Requests\Appointment\RescheduleAppointmentRequest;
 use App\Http\Requests\Appointment\AttendAppointmentRequest;
 use App\Http\Requests\Appointment\RejectAppointmentRequest;
+use App\Http\Requests\Appointment\DoctorScheduleAppointmentRequest;
 use App\Http\Resources\AppointmentResource;
 use App\Models\Appointment;
 use App\Models\AppointmentReschedule;
@@ -115,6 +116,37 @@ class AppointmentController extends Controller
         }
 
         return $this->schedule($request);
+    }
+
+    public function scheduleByDoctor(DoctorScheduleAppointmentRequest $request): JsonResponse
+    {
+        if (!$request->user() || !$request->user()->tokenCan('doctor')) {
+            return response()->json(['message' => 'No autorizado'], 403);
+        }
+        $data = $request->validated();
+
+        $user = $request->user()->load('doctor');
+        if (!$user->doctor || !$user->doctor->active) {
+            return response()->json(['message' => 'Doctor inactivo o no válido'], 403);
+        }
+
+        return DB::transaction(function () use ($data, $user) {
+            if (Appointment::where('scheduled_at', $data['scheduled_at'])->exists()) {
+                return response()->json(['message' => 'El horario ya está ocupado'], 422);
+            }
+
+            $appointment = Appointment::create([
+                'scheduled_by_person_id' => $user->id,
+                'patient_id' => $data['patient_id'],
+                'doctor_id' => $user->doctor->id,
+                'scheduled_at' => $data['scheduled_at'],
+                'status' => AppointmentStatus::Confirmed,
+                'confirmed_at' => now(),
+                'deposit_slip_attachment_id' => $data['deposit_slip_attachment_id'] ?? null,
+            ]);
+
+            return response()->json(new AppointmentResource($appointment->load(['doctor.person','patient.person'])), 201);
+        });
     }
 
     public function reschedule(RescheduleAppointmentRequest $request, string $id): JsonResponse

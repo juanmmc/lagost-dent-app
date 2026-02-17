@@ -80,6 +80,24 @@ Notas:
 - Citas del paciente: `GET /api/patients/{id}/appointments?order=desc|asc` (ability "patient")
 	- `200 OK` → lista de `AppointmentResource`
 
+- Asociados del titular: `GET /api/patients/{id}/associates` (ability "patient")
+	- `200 OK` → lista de `PatientResource`
+	- Notas: `id` es el `titular_patient_id`
+
+- Buscar pacientes por nombre: `GET /api/patients/search?name=<texto>&limit=7` (ability "doctor")
+	- Query:
+		- `name` (requerido) texto a buscar en `person.name`
+		- `limit` (opcional) máx `7` (por defecto `7`)
+	- `200 OK` → lista de `PatientResource`
+
+- Registrar alergia (doctor): `POST /api/patients/{id}/allergies` (ability "doctor")
+	- Body JSON:
+		```json
+		{ "name": "string", "severity": "string (opcional)", "notes": "string (opcional)" }
+		```
+	- Respuestas:
+		- `201 Created` → `{ "id": "uuid", "patient_id": "uuid", "name": "string", "severity": "string|null", "notes": "string|null" }`
+
 #### Citas
 - Detalle de cita: `GET /api/appointments/{id}` (abilities "patient" o "doctor")
 	- `200 OK` →
@@ -119,6 +137,20 @@ Notas:
 		- `401 Unauthorized` → `{ "message": "No autenticado como paciente titular" }`
 		- `422 Unprocessable Entity` → `{ "message": "El paciente no está asociado al titular" }`
 
+- Agendar por doctor: `POST /api/appointments/by-doctor` (ability "doctor")
+	- Body JSON:
+		```json
+		{
+			"patient_id": "uuid",
+			"scheduled_at": "YYYY-MM-DD HH:MM:SS",
+			"deposit_slip_attachment_id": "uuid (opcional)"
+		}
+		```
+	- Respuestas:
+		- `201 Created` → `AppointmentResource` (estado `Confirmed`, con `confirmed_at`)
+		- `403 Forbidden` → `{ "message": "No autorizado" }` o `{ "message": "Doctor inactivo o no válido" }`
+		- `422 Unprocessable Entity` → `{ "message": "El horario ya está ocupado" }`
+
 - Listado de agenda (doctor): `GET /api/appointments` (ability "doctor")
 	- Query:
 		- `date` (requerido) `YYYY-MM-DD`
@@ -155,6 +187,15 @@ Notas:
 
 - Inasistencia (doctor): `PATCH /api/appointments/{id}/absent`
 	- `200 OK` → `AppointmentResource`
+
+#### Doctores
+- Doctores activos: `GET /api/doctors` (público)
+	- `200 OK` →
+		```json
+		[
+			{ "id": "uuid", "name": "string", "phone": "string" }
+		]
+		```
 
 #### Adjuntos
 - Subir adjunto: `POST /api/attachments` (abilities "patient" o "doctor")
