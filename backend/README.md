@@ -188,6 +188,25 @@ Notas:
 - Inasistencia (doctor): `PATCH /api/appointments/{id}/absent`
 	- `200 OK` → `AppointmentResource`
 
+- Disponibilidad por horas redondas: `GET /api/appointments/availability?date=YYYY-MM-DD&from=HH:MM&to=HH:MM` (abilities "patient" o "doctor")
+	- Query:
+		- `date` (requerido) día a consultar
+		- `from` (opcional) inicio del rango (por defecto `08:00`)
+		- `to` (opcional) fin del rango (por defecto `18:00`)
+	- `200 OK` →
+		```json
+		{
+			"date": "2026-03-19",
+			"from": "08:00:00",
+			"to": "18:00:00",
+			"available": [
+				"2026-03-19T08:00:00+00:00",
+				"2026-03-19T09:00:00+00:00",
+				"2026-03-19T11:00:00+00:00"
+			]
+		}
+		```
+
 #### Doctores
 - Doctores activos: `GET /api/doctors` (público)
 	- `200 OK` →

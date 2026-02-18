@@ -8,6 +8,7 @@ use App\Http\Requests\Appointment\RescheduleAppointmentRequest;
 use App\Http\Requests\Appointment\AttendAppointmentRequest;
 use App\Http\Requests\Appointment\RejectAppointmentRequest;
 use App\Http\Requests\Appointment\DoctorScheduleAppointmentRequest;
+use Illuminate\Support\Carbon;
 use App\Http\Resources\AppointmentResource;
 use App\Models\Appointment;
 use App\Models\AppointmentReschedule;
@@ -240,5 +241,48 @@ class AppointmentController extends Controller
         $appointment->absent_at = now();
         $appointment->save();
         return response()->json(new AppointmentResource($appointment));
+    }
+
+    public function availability(Request $request): JsonResponse
+    {
+        // Allowed for both patient and doctor via route middleware
+        $validated = $request->validate([
+            'date' => ['required','date'],
+            'from' => ['nullable','date_format:H:i'],
+            'to' => ['nullable','date_format:H:i'],
+        ]);
+
+        $date = $validated['date'];
+        $from = $request->input('from', '08:00');
+        $to = $request->input('to', '18:00');
+
+        try {
+            $start = Carbon::createFromFormat('Y-m-d H:i', $date.' '.$from)->minute(0)->second(0);
+            $end = Carbon::createFromFormat('Y-m-d H:i', $date.' '.$to)->minute(0)->second(0);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Rango de horas inválido'], 422);
+        }
+
+        if ($end->lessThanOrEqualTo($start)) {
+            return response()->json(['message' => 'El rango "to" debe ser mayor a "from"'], 422);
+        }
+
+        $slots = [];
+        $cursor = $start->copy();
+        while ($cursor->lessThan($end)) {
+            // Global agenda: un slot ocupado por cualquier cita bloquea la hora
+            $occupied = Appointment::where('scheduled_at', $cursor)->exists();
+            if (!$occupied) {
+                $slots[] = $cursor->toIso8601String();
+            }
+            $cursor->addHour();
+        }
+
+        return response()->json([
+            'date' => $date,
+            'from' => $start->toTimeString(),
+            'to' => $end->toTimeString(),
+            'available' => $slots,
+        ]);
     }
 }
