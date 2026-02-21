@@ -44,12 +44,29 @@ class AuthRepository {
 
   String resolveErrorMessage(Object error) {
     if (error is DioException) {
+      final raw = error.response?.data?.toString().toLowerCase() ?? '';
+      if (raw.contains('people_phone_unique') ||
+          raw.contains('llave duplicada') ||
+          raw.contains('sqlstate[23505]')) {
+        return 'Ese teléfono ya está registrado. Intenta iniciar sesión con ese número.';
+      }
+
       final data = error.response?.data;
       if (data is Map<String, dynamic>) {
         final message = data['message'];
         if (message is String && message.isNotEmpty) return message;
+
+        final errors = data['errors'];
+        if (errors is Map<String, dynamic> && errors.isNotEmpty) {
+          final firstKey = errors.keys.first;
+          final firstValue = errors[firstKey];
+          if (firstValue is List && firstValue.isNotEmpty) {
+            return firstValue.first.toString();
+          }
+          if (firstValue != null) return firstValue.toString();
+        }
       }
-      return 'Error de conexión con el servidor';
+      return 'Error del servidor (${error.response?.statusCode ?? 'sin código'})';
     }
     return 'Ocurrió un error inesperado';
   }

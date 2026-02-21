@@ -54,24 +54,13 @@ class _PatientRegisterScreenState extends ConsumerState<PatientRegisterScreen> {
     if (!mounted) return;
 
     if (ok) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Paciente registrado con éxito')),
-      );
-      Navigator.of(context).pop();
+      Navigator.of(context).pop(true);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authControllerProvider);
-
-    ref.listen<AuthState>(authControllerProvider, (previous, next) {
-      if (previous?.error != next.error && next.error != null && mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(next.error!)));
-      }
-    });
 
     return Scaffold(
       appBar: AppBar(title: const Text('Registro Paciente')),
@@ -133,6 +122,16 @@ class _PatientRegisterScreenState extends ConsumerState<PatientRegisterScreen> {
                         )
                       : const Text('Registrar'),
                 ),
+                if (authState.error != null) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    authState.error!,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

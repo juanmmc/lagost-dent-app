@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_client.dart';
@@ -57,15 +58,25 @@ class AuthRemoteDataSource {
     required String birthdate,
     String? titularPatientId,
   }) async {
-    await _dio.post<void>(
-      '/api/patients',
-      data: {
-        'phone': phone,
-        'name': name,
-        'birthdate': birthdate,
-        if (titularPatientId != null && titularPatientId.isNotEmpty)
-          'titular_patient_id': titularPatientId,
+    final payload = <String, dynamic>{
+      'phone': phone,
+      'name': name,
+      'birthdate': birthdate,
+      'birth_date': birthdate,
+      if (titularPatientId != null && titularPatientId.isNotEmpty) ...{
+        'titular_patient_id': titularPatientId,
+        'titularPatientId': titularPatientId,
       },
-    );
+    };
+
+    try {
+      await _dio.post<void>('/api/patients', data: payload);
+    } on DioException catch (error) {
+      if (kDebugMode) {
+        debugPrint('❌ [REGISTER] payload=$payload');
+        debugPrint('❌ [REGISTER] response=${error.response?.data}');
+      }
+      rethrow;
+    }
   }
 }

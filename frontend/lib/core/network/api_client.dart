@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../config/app_config.dart';
@@ -22,7 +23,26 @@ final dioProvider = Provider<Dio>((ref) {
         if (session != null) {
           options.headers['Authorization'] = 'Bearer ${session.token}';
         }
+        if (kDebugMode) {
+          debugPrint('➡️ [API] ${options.method} ${options.uri}');
+        }
         handler.next(options);
+      },
+      onResponse: (response, handler) {
+        if (kDebugMode) {
+          debugPrint(
+            '✅ [API] ${response.statusCode} ${response.requestOptions.uri}',
+          );
+        }
+        handler.next(response);
+      },
+      onError: (error, handler) {
+        if (kDebugMode) {
+          debugPrint(
+            '❌ [API] ${error.response?.statusCode ?? '-'} ${error.requestOptions.uri} ${error.message}',
+          );
+        }
+        handler.next(error);
       },
     ),
   );

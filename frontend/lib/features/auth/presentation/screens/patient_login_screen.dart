@@ -48,6 +48,16 @@ class _PatientLoginScreenState extends ConsumerState<PatientLoginScreen> {
     if (ok) context.go('/patient/home');
   }
 
+  Future<void> _goToRegister() async {
+    final created = await context.push<bool>('/register/patient');
+    if (!mounted) return;
+    if (created == true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Paciente registrado con éxito')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authControllerProvider);
@@ -108,7 +118,7 @@ class _PatientLoginScreenState extends ConsumerState<PatientLoginScreen> {
                 ),
                 const SizedBox(height: 8),
                 TextButton(
-                  onPressed: () => context.push('/register/patient'),
+                  onPressed: _goToRegister,
                   child: const Text('¿No estás registrado? Crear cuenta'),
                 ),
               ],
