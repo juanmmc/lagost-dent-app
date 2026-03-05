@@ -34,8 +34,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // Shared appointment detail (any of patient or doctor)
     Route::middleware('ability:patient,doctor')->group(function () {
         Route::get('/patients/{id}/allergies', [PatientController::class, 'allergies']);
-        Route::get('/appointments/{id}', [AppointmentController::class, 'show']);
         Route::get('/appointments/availability', [AppointmentController::class, 'availability']);
+        Route::get('/appointments/{id}', [AppointmentController::class, 'show']);
         // Attachments upload allowed by both for now
         Route::post('/attachments', [AttachmentController::class, 'upload']);
     });

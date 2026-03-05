@@ -16,9 +16,11 @@ class AppointmentsRemoteDataSource {
   final Dio _dio;
 
   static const String _listForPatientPath = '/api/patients/{id}/appointments';
-  static const String _associatesForPatientPath = '/api/patients/{id}/associates';
+  static const String _associatesForPatientPath =
+      '/api/patients/{id}/associates';
   static const String _listForDoctorPath = '/api/appointments/listForDoctor';
   static const String _genericListPath = '/api/appointments';
+  static const String _availabilityPath = '/api/appointments/availability';
 
   Future<List<Appointment>> fetchAppointments({
     String? date,
@@ -103,6 +105,35 @@ class AppointmentsRemoteDataSource {
         .toList();
   }
 
+  Future<List<DateTime>> fetchAvailability({
+    required DateTime date,
+    String from = '08:00',
+    String to = '18:00',
+  }) async {
+    final response = await _dio.get<dynamic>(
+      _availabilityPath,
+      queryParameters: {'date': _formatDate(date), 'from': from, 'to': to},
+    );
+
+    final payload = response.data;
+    List<dynamic> rawSlots = const [];
+
+    if (payload is Map<String, dynamic>) {
+      final directSlots = payload['available'];
+      if (directSlots is List<dynamic>) {
+        rawSlots = directSlots;
+      } else {
+        final nested = payload['data'];
+        if (nested is Map<String, dynamic> &&
+            nested['available'] is List<dynamic>) {
+          rawSlots = nested['available'] as List<dynamic>;
+        }
+      }
+    }
+
+    return rawSlots.whereType<String>().map(DateTime.parse).toList();
+  }
+
   Future<List<PatientOption>> searchPatientsByName(String query) async {
     final response = await _dio.get<dynamic>(
       '/api/patients',
@@ -134,16 +165,22 @@ class AppointmentsRemoteDataSource {
     required String patientId,
     required String doctorId,
     required DateTime scheduledAt,
-    String? paymentReference,
+    String? depositSlipAttachmentId,
+    bool byTitular = false,
   }) async {
+    final path = byTitular
+        ? '/api/appointments/by-titular'
+        : '/api/appointments';
+
     await _dio.post<void>(
-      '/api/appointments',
+      path,
       data: {
         'patient_id': patientId,
         'doctor_id': doctorId,
-        'scheduled_at': scheduledAt.toIso8601String(),
-        if (paymentReference != null && paymentReference.isNotEmpty)
-          'payment_reference': paymentReference,
+        'scheduled_at': _formatDateTimeForBackend(scheduledAt),
+        if (depositSlipAttachmentId != null &&
+            depositSlipAttachmentId.isNotEmpty)
+          'deposit_slip_attachment_id': depositSlipAttachmentId,
       },
     );
   }
@@ -164,6 +201,20 @@ class AppointmentsRemoteDataSource {
       );
     }
   }
+}
+
+String _formatDate(DateTime date) {
+  final month = date.month.toString().padLeft(2, '0');
+  final day = date.day.toString().padLeft(2, '0');
+  return '${date.year}-$month-$day';
+}
+
+String _formatDateTimeForBackend(DateTime value) {
+  final date = _formatDate(value);
+  final hour = value.hour.toString().padLeft(2, '0');
+  final minute = value.minute.toString().padLeft(2, '0');
+  final second = value.second.toString().padLeft(2, '0');
+  return '$date $hour:$minute:$second';
 }
 
 List<dynamic> _extractList(dynamic data) {

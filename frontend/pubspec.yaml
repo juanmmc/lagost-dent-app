@@ -8,6 +8,7 @@ environment:
 
 dependencies:
   dio: ^5.9.1
+  file_picker: ^10.3.2
   flutter:
     sdk: flutter
   flutter_riverpod: ^3.2.1

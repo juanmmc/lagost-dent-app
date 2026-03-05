@@ -56,6 +56,14 @@ class AppointmentsRepository {
     return _remote.fetchDoctors(query: query);
   }
 
+  Future<List<DateTime>> fetchAvailability({
+    required DateTime date,
+    String from = '08:00',
+    String to = '18:00',
+  }) {
+    return _remote.fetchAvailability(date: date, from: from, to: to);
+  }
+
   Future<List<PatientOption>> searchPatientsByName(String query) {
     return _remote.searchPatientsByName(query);
   }
@@ -70,13 +78,15 @@ class AppointmentsRepository {
     required String patientId,
     required String doctorId,
     required DateTime scheduledAt,
-    String? paymentReference,
+    String? depositSlipAttachmentId,
+    bool byTitular = false,
   }) {
     return _remote.createAppointment(
       patientId: patientId,
       doctorId: doctorId,
       scheduledAt: scheduledAt,
-      paymentReference: paymentReference,
+      depositSlipAttachmentId: depositSlipAttachmentId,
+      byTitular: byTitular,
     );
   }
 
