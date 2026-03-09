@@ -34,6 +34,7 @@ Los endpoints protegidos usan `Authorization: Bearer <token>` con abilities de S
 Notas:
 - Formatos de fecha de entrada: `scheduled_at` y `new_scheduled_at` aceptan `Y-m-d H:i:s`.
 - Fechas en respuestas se entregan en ISO 8601.
+- En `AppointmentResource`, `status` se devuelve como objeto: `{ "value": int, "descriptor": string }`.
 - Abilities requeridas: "patient" para rutas de paciente, "doctor" para rutas de doctor, o ambas según corresponda.
 
 #### Pacientes
@@ -105,7 +106,10 @@ Notas:
 		{
 			"id": "uuid",
 			"scheduled_at": "ISO-8601",
-			"status": 1,
+			"status": {
+				"value": 1,
+				"descriptor": "Por confirmar"
+			},
 			"doctor": { "id": "uuid", "name": "string" },
 			"patient": { "id": "uuid", "name": "string" },
 			"diagnosis": "string|null",
@@ -147,7 +151,7 @@ Notas:
 		}
 		```
 	- Respuestas:
-		- `201 Created` → `AppointmentResource` (estado `Confirmed`, con `confirmed_at`)
+		- `201 Created` → `AppointmentResource` (con `status.value = 2`, `status.descriptor = "Confirmada"` y `confirmed_at`)
 		- `403 Forbidden` → `{ "message": "No autorizado" }` o `{ "message": "Doctor inactivo o no válido" }`
 		- `422 Unprocessable Entity` → `{ "message": "El horario ya está ocupado" }`
 
@@ -222,7 +226,7 @@ Notas:
 	- `201 Created` → `{ "id": "uuid", "path": "attachments/...?" }`
 
 ### Estados de Cita
-- 1 Por confirmar, 2 Confirmada, 3 Atendida, 4 Inasistente, 5 Rechazada, 6 Cancelada.
+- 1 Por confirmar, 2 Confirmada, 3 Atendida, 4 Ausente, 5 Rechazada, 6 Cancelada.
 
 ### Instalación y Arranque
 ```bash

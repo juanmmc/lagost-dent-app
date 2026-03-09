@@ -8,10 +8,15 @@ class AppointmentResource extends JsonResource
 {
     public function toArray($request)
     {
+        $status = $this->status;
+
         return [
             'id' => $this->id,
             'scheduled_at' => $this->scheduled_at?->toIso8601String(),
-            'status' => $this->status->value ?? null,
+            'status' => $status ? [
+                'value' => $status->value,
+                'descriptor' => $status->descriptor(),
+            ] : null,
             'doctor' => $this->whenLoaded('doctor', function () {
                 return [
                     'id' => $this->doctor->id,
