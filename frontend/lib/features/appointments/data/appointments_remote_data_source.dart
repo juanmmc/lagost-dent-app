@@ -20,6 +20,7 @@ class AppointmentsRemoteDataSource {
       '/api/patients/{id}/associates';
   static const String _listForDoctorPath = '/api/appointments/listForDoctor';
   static const String _genericListPath = '/api/appointments';
+  static const String _detailPath = '/api/appointments/{id}';
   static const String _availabilityPath = '/api/appointments/availability';
 
   Future<List<Appointment>> fetchAppointments({
@@ -89,6 +90,13 @@ class AppointmentsRemoteDataSource {
     } on DioException {
       return fetchAppointments(date: date, doctorId: doctorId);
     }
+  }
+
+  Future<Appointment> fetchAppointmentDetail({required String appointmentId}) async {
+    final response = await _dio.get<dynamic>(
+      _detailPath.replaceFirst('{id}', appointmentId),
+    );
+    return Appointment.fromJson(_extractItem(response.data));
   }
 
   Future<List<DoctorOption>> fetchDoctors({String? query}) async {
@@ -201,6 +209,71 @@ class AppointmentsRemoteDataSource {
       );
     }
   }
+
+  Future<Appointment> rescheduleAppointment({
+    required String appointmentId,
+    required DateTime newScheduledAt,
+    String? reason,
+  }) async {
+    final response = await _dio.patch<dynamic>(
+      '/api/appointments/$appointmentId/reschedule',
+      data: {
+        'new_scheduled_at': _formatDateTimeForBackend(newScheduledAt),
+        if (reason != null && reason.trim().isNotEmpty) 'reason': reason.trim(),
+      },
+    );
+
+    return Appointment.fromJson(_extractItem(response.data));
+  }
+
+  Future<Appointment> confirmAppointment({
+    required String appointmentId,
+  }) async {
+    final response = await _dio.patch<dynamic>(
+      '/api/appointments/$appointmentId/confirm',
+    );
+
+    return Appointment.fromJson(_extractItem(response.data));
+  }
+
+  Future<Appointment> rejectAppointment({
+    required String appointmentId,
+    required String reason,
+  }) async {
+    final response = await _dio.patch<dynamic>(
+      '/api/appointments/$appointmentId/reject',
+      data: {'reason': reason},
+    );
+
+    return Appointment.fromJson(_extractItem(response.data));
+  }
+
+  Future<Appointment> attendAppointment({
+    required String appointmentId,
+    required String diagnosisText,
+    String? recipeAttachmentId,
+  }) async {
+    final response = await _dio.patch<dynamic>(
+      '/api/appointments/$appointmentId/attend',
+      data: {
+        'diagnosis_text': diagnosisText,
+        if (recipeAttachmentId != null && recipeAttachmentId.trim().isNotEmpty)
+          'recipe_attachment_id': recipeAttachmentId.trim(),
+      },
+    );
+
+    return Appointment.fromJson(_extractItem(response.data));
+  }
+
+  Future<Appointment> markAppointmentAbsent({
+    required String appointmentId,
+  }) async {
+    final response = await _dio.patch<dynamic>(
+      '/api/appointments/$appointmentId/absent',
+    );
+
+    return Appointment.fromJson(_extractItem(response.data));
+  }
 }
 
 String _formatDate(DateTime date) {
@@ -224,4 +297,13 @@ List<dynamic> _extractList(dynamic data) {
     if (list is List<dynamic>) return list;
   }
   return const [];
+}
+
+Map<String, dynamic> _extractItem(dynamic data) {
+  if (data is Map<String, dynamic>) {
+    final nested = data['data'];
+    if (nested is Map<String, dynamic>) return nested;
+    return data;
+  }
+  throw const FormatException('Respuesta invalida de la cita');
 }

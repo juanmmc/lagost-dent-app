@@ -162,6 +162,10 @@ class _PatientBookingFlowView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final controller = ref.read(patientAppointmentsControllerProvider.notifier);
+    final isFormProcessing =
+      state.isSubmitting ||
+      state.isLoadingAvailability ||
+      state.isUploadingReceipt;
     final selectedDoctor =
         state.doctors
             .where((doctor) => doctor.id == state.selectedDoctorId)
@@ -413,10 +417,10 @@ class _PatientBookingFlowView extends ConsumerWidget {
         ),
         const SizedBox(height: 16),
         ElevatedButton.icon(
-          onPressed: state.isSubmitting
+          onPressed: isFormProcessing
               ? null
               : () => controller.bookAppointment(),
-          icon: state.isSubmitting
+          icon: isFormProcessing
               ? const SizedBox(
                   width: 18,
                   height: 18,
@@ -424,8 +428,8 @@ class _PatientBookingFlowView extends ConsumerWidget {
                 )
               : const Icon(Icons.check_rounded),
           label: Text(
-            state.isSubmitting
-                ? 'Agendando...'
+            isFormProcessing
+                ? 'Procesando...'
                 : 'Confirmar cita${selectedDoctor != null ? ' con ${selectedDoctor.name}' : ''}',
           ),
         ),

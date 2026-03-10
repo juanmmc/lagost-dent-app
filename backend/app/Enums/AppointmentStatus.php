@@ -9,7 +9,7 @@ enum AppointmentStatus: int
     case Attended = 3;
     case Absent = 4;
     case Rejected = 5;
-    case Cancelled = 6;
+    //case Cancelled = 6;
 
     public function descriptor(): string
     {
@@ -19,7 +19,7 @@ enum AppointmentStatus: int
             self::Attended => 'Atendida',
             self::Absent => 'Ausente',
             self::Rejected => 'Rechazada',
-            self::Cancelled => 'Cancelada',
+            //self::Cancelled => 'Cancelada',
         };
     }
 }

@@ -31,6 +31,20 @@ class AppointmentResource extends JsonResource
             }),
             'diagnosis' => $this->diagnosis_text,
             'deposit_slip_attachment_id' => $this->deposit_slip_attachment_id,
+            'deposit_slip_attachment' => $this->whenLoaded('depositSlip', function () {
+                $disk = $this->depositSlip->disk ?: 'public';
+                $publicUrl = $disk === 'public' ? asset('storage/'.$this->depositSlip->path) : null;
+
+                return [
+                    'id' => $this->depositSlip->id,
+                    'path' => $this->depositSlip->path,
+                    'type' => $this->depositSlip->type,
+                    'mime' => $this->depositSlip->mime,
+                    'size' => $this->depositSlip->size,
+                    'disk' => $disk,
+                    'url' => $publicUrl,
+                ];
+            }),
             'recipe_attachment_id' => $this->recipe_attachment_id,
             'rejection_reason' => $this->rejection_reason,
         ];

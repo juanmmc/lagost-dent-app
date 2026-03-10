@@ -114,6 +114,15 @@ Notas:
 			"patient": { "id": "uuid", "name": "string" },
 			"diagnosis": "string|null",
 			"deposit_slip_attachment_id": "uuid|null",
+			"deposit_slip_attachment": {
+				"id": "uuid",
+				"path": "attachments/...",
+				"url": "http://localhost:8000/storage/attachments/...",
+				"type": "string",
+				"mime": "string",
+				"size": 12345,
+				"disk": "public"
+			} | null,
 			"recipe_attachment_id": "uuid|null",
 			"rejection_reason": "string|null"
 		}
@@ -223,7 +232,7 @@ Notas:
 #### Adjuntos
 - Subir adjunto: `POST /api/attachments` (abilities "patient" o "doctor")
 	- `multipart/form-data`: `file` (máx 5MB), `type` (string)
-	- `201 Created` → `{ "id": "uuid", "path": "attachments/...?" }`
+	- `201 Created` → `{ "id": "uuid", "path": "attachments/...", "url": "http://localhost:8000/storage/attachments/..." }`
 
 ### Estados de Cita
 - 1 Por confirmar, 2 Confirmada, 3 Atendida, 4 Ausente, 5 Rechazada, 6 Cancelada.

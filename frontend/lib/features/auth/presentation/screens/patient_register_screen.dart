@@ -16,14 +16,12 @@ class _PatientRegisterScreenState extends ConsumerState<PatientRegisterScreen> {
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _birthdateController = TextEditingController();
-  final _titularController = TextEditingController();
 
   @override
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
     _birthdateController.dispose();
-    _titularController.dispose();
     super.dispose();
   }
 
@@ -48,7 +46,6 @@ class _PatientRegisterScreenState extends ConsumerState<PatientRegisterScreen> {
           phone: _phoneController.text.trim(),
           name: _nameController.text.trim(),
           birthdate: _birthdateController.text.trim(),
-          titularPatientId: _titularController.text.trim(),
         );
 
     if (!mounted) return;
@@ -103,13 +100,6 @@ class _PatientRegisterScreenState extends ConsumerState<PatientRegisterScreen> {
                   validator: (value) => (value == null || value.trim().isEmpty)
                       ? 'Selecciona la fecha de nacimiento'
                       : null,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _titularController,
-                  decoration: const InputDecoration(
-                    labelText: 'Titular patient_id (opcional)',
-                  ),
                 ),
                 const SizedBox(height: 20),
                 ElevatedButton(

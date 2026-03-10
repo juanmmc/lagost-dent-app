@@ -12,6 +12,12 @@ class Appointment {
     this.diagnosis,
     this.prescription,
     this.paymentReference,
+    this.depositSlipAttachmentId,
+    this.depositSlipAttachmentPath,
+    this.depositSlipAttachmentMime,
+    this.recipeAttachmentId,
+    this.recipeAttachmentPath,
+    this.rejectionReason,
   });
 
   final String id;
@@ -27,13 +33,58 @@ class Appointment {
   final String? diagnosis;
   final String? prescription;
   final String? paymentReference;
+  final String? depositSlipAttachmentId;
+  final String? depositSlipAttachmentPath;
+  final String? depositSlipAttachmentMime;
+  final String? recipeAttachmentId;
+  final String? recipeAttachmentPath;
+  final String? rejectionReason;
 
   static const int pendingConfirmationStatusValue = 1;
+  static const int confirmedStatusValue = 2;
+  static const int attendedStatusValue = 3;
+  static const int absentStatusValue = 4;
+  static const int rejectedStatusValue = 5;
 
   bool get isPendingConfirmation =>
-      statusValue == pendingConfirmationStatusValue;
+      statusValue == pendingConfirmationStatusValue ||
+      _normalizedStatus == 'por confirmar' ||
+      _normalizedStatus == 'por_confirmar' ||
+      _normalizedStatus == 'pending' ||
+      _normalizedStatus == 'pending_confirmation';
 
-  bool get isDone => statusDescriptor.toLowerCase() == 'completed';
+  bool get isConfirmed {
+    if (statusValue == confirmedStatusValue) return true;
+    if (statusValue != null) return false;
+    if (isPendingConfirmation) return false;
+    return _normalizedStatus == 'confirmada' ||
+        _normalizedStatus == 'confirmado' ||
+        _normalizedStatus == 'confirmed' ||
+        _normalizedStatus == 'confirm';
+  }
+
+  bool get isDone =>
+      statusValue == attendedStatusValue ||
+      _normalizedStatus == 'completed' ||
+      _normalizedStatus == 'atendida' ||
+      _normalizedStatus == 'atendido';
+
+  bool get isCancelled =>
+      statusValue == rejectedStatusValue ||
+      _normalizedStatus == 'cancelled' ||
+      _normalizedStatus == 'cancelada' ||
+      _normalizedStatus == 'cancelado' ||
+      _normalizedStatus == 'rejected' ||
+      _normalizedStatus == 'rechazada' ||
+      _normalizedStatus == 'rechazado';
+
+  bool get isAbsent =>
+      statusValue == absentStatusValue ||
+      _normalizedStatus == 'absent' ||
+      _normalizedStatus == 'inasistencia' ||
+      _normalizedStatus == 'ausente';
+
+  String get _normalizedStatus => _normalizeStatus(statusDescriptor);
 
   factory Appointment.fromJson(Map<String, dynamic> json) {
     final rawDate =
@@ -76,6 +127,30 @@ class Appointment {
       prescription: _nullableString(json['prescription']),
       paymentReference: _nullableString(
         json['payment_reference'] ?? json['paymentReference'],
+      ),
+      depositSlipAttachmentId: _nullableString(
+        json['deposit_slip_attachment_id'] ?? json['depositSlipAttachmentId'],
+      ),
+      depositSlipAttachmentPath: _nullableString(
+        json['deposit_slip_attachment_path'] ??
+            json['depositSlipAttachmentPath'] ??
+            json['deposit_slip_attachment']?['path'],
+      ),
+      depositSlipAttachmentMime: _nullableString(
+        json['deposit_slip_attachment_mime'] ??
+            json['depositSlipAttachmentMime'] ??
+            json['deposit_slip_attachment']?['mime'],
+      ),
+      recipeAttachmentId: _nullableString(
+        json['recipe_attachment_id'] ?? json['recipeAttachmentId'],
+      ),
+      recipeAttachmentPath: _nullableString(
+        json['recipe_attachment_path'] ??
+            json['recipeAttachmentPath'] ??
+            json['recipe_attachment']?['path'],
+      ),
+      rejectionReason: _nullableString(
+        json['rejection_reason'] ?? json['rejectionReason'],
       ),
     );
   }
@@ -179,4 +254,15 @@ int? _asInt(dynamic value) {
 String? _nullableString(dynamic value) {
   final text = _asString(value);
   return text.isEmpty ? null : text;
+}
+
+String _normalizeStatus(String value) {
+  return value
+      .trim()
+      .toLowerCase()
+      .replaceAll('á', 'a')
+      .replaceAll('é', 'e')
+      .replaceAll('í', 'i')
+      .replaceAll('ó', 'o')
+      .replaceAll('ú', 'u');
 }

@@ -35,7 +35,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('ability:patient,doctor')->group(function () {
         Route::get('/patients/{id}/allergies', [PatientController::class, 'allergies']);
         Route::get('/appointments/availability', [AppointmentController::class, 'availability']);
-        Route::get('/appointments/{id}', [AppointmentController::class, 'show']);
+        Route::get('/appointments/{id}', [AppointmentController::class, 'show'])->whereUuid('id');
         // Attachments upload allowed by both for now
         Route::post('/attachments', [AttachmentController::class, 'upload']);
     });
@@ -45,11 +45,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/patients/search', [PatientController::class, 'search']);
         Route::post('/patients/{id}/allergies', [PatientController::class, 'addAllergy']);
         Route::get('/appointments', [AppointmentController::class, 'listForDoctor']);
+        // Backward compatibility with clients that call this explicit endpoint.
+        Route::get('/appointments/listForDoctor', [AppointmentController::class, 'listForDoctor']);
         Route::post('/appointments/by-doctor', [AppointmentController::class, 'scheduleByDoctor']);
-        Route::patch('/appointments/{id}/reschedule', [AppointmentController::class, 'reschedule']);
-        Route::patch('/appointments/{id}/confirm', [AppointmentController::class, 'confirm']);
-        Route::patch('/appointments/{id}/reject', [AppointmentController::class, 'reject']);
-        Route::patch('/appointments/{id}/attend', [AppointmentController::class, 'attend']);
-        Route::patch('/appointments/{id}/absent', [AppointmentController::class, 'absent']);
+        Route::patch('/appointments/{id}/reschedule', [AppointmentController::class, 'reschedule'])->whereUuid('id');
+        Route::patch('/appointments/{id}/confirm', [AppointmentController::class, 'confirm'])->whereUuid('id');
+        Route::patch('/appointments/{id}/reject', [AppointmentController::class, 'reject'])->whereUuid('id');
+        Route::patch('/appointments/{id}/attend', [AppointmentController::class, 'attend'])->whereUuid('id');
+        Route::patch('/appointments/{id}/absent', [AppointmentController::class, 'absent'])->whereUuid('id');
     });
 });

@@ -52,6 +52,10 @@ class AppointmentsRepository {
     );
   }
 
+  Future<Appointment> fetchAppointmentDetail({required String appointmentId}) {
+    return _remote.fetchAppointmentDetail(appointmentId: appointmentId);
+  }
+
   Future<List<DoctorOption>> fetchDoctors({String? query}) {
     return _remote.fetchDoctors(query: query);
   }
@@ -98,6 +102,48 @@ class AppointmentsRepository {
       appointmentId: appointmentId,
       status: status,
     );
+  }
+
+  Future<Appointment> rescheduleAppointment({
+    required String appointmentId,
+    required DateTime newScheduledAt,
+    String? reason,
+  }) {
+    return _remote.rescheduleAppointment(
+      appointmentId: appointmentId,
+      newScheduledAt: newScheduledAt,
+      reason: reason,
+    );
+  }
+
+  Future<Appointment> confirmAppointment({required String appointmentId}) {
+    return _remote.confirmAppointment(appointmentId: appointmentId);
+  }
+
+  Future<Appointment> rejectAppointment({
+    required String appointmentId,
+    required String reason,
+  }) {
+    return _remote.rejectAppointment(
+      appointmentId: appointmentId,
+      reason: reason,
+    );
+  }
+
+  Future<Appointment> attendAppointment({
+    required String appointmentId,
+    required String diagnosisText,
+    String? recipeAttachmentId,
+  }) {
+    return _remote.attendAppointment(
+      appointmentId: appointmentId,
+      diagnosisText: diagnosisText,
+      recipeAttachmentId: recipeAttachmentId,
+    );
+  }
+
+  Future<Appointment> markAppointmentAbsent({required String appointmentId}) {
+    return _remote.markAppointmentAbsent(appointmentId: appointmentId);
   }
 
   String resolveErrorMessage(Object error) {

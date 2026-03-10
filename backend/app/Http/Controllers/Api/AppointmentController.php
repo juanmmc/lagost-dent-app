@@ -64,7 +64,7 @@ class AppointmentController extends Controller
     public function show(string $id): JsonResponse
     {
         // Allowed for both patient and doctor tokens via route middleware
-        $appointment = Appointment::with(['doctor.person', 'patient.person'])->findOrFail($id);
+        $appointment = Appointment::with(['doctor.person', 'patient.person', 'depositSlip'])->findOrFail($id);
         return response()->json(new AppointmentResource($appointment));
     }
 

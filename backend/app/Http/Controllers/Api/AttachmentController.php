@@ -18,7 +18,7 @@ class AttachmentController extends Controller
         ]);
 
         $file = $request->file('file');
-        $disk = 'local';
+        $disk = 'public';
         $path = $file->store('attachments', $disk);
 
         $attachment = Attachment::create([
@@ -32,6 +32,7 @@ class AttachmentController extends Controller
         return response()->json([
             'id' => $attachment->id,
             'path' => $attachment->path,
+            'url' => Storage::disk($disk)->url($attachment->path),
         ], 201);
     }
 }

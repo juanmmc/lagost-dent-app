@@ -51,10 +51,12 @@ class DoctorAgendaState {
       isLoading: isLoading ?? this.isLoading,
       isActionLoading: isActionLoading ?? this.isActionLoading,
       agenda: agenda ?? this.agenda,
-      selectedDate:
-          clearSelectedDate ? null : (selectedDate ?? this.selectedDate),
-      selectedStatus:
-          clearSelectedStatus ? null : (selectedStatus ?? this.selectedStatus),
+      selectedDate: clearSelectedDate
+          ? null
+          : (selectedDate ?? this.selectedDate),
+      selectedStatus: clearSelectedStatus
+          ? null
+          : (selectedStatus ?? this.selectedStatus),
       patients: patients ?? this.patients,
       searchQuery: searchQuery ?? this.searchQuery,
       error: clearError ? null : (error ?? this.error),
@@ -85,7 +87,11 @@ class DoctorAgendaController extends Notifier<DoctorAgendaState> {
       state = state.copyWith(selectedDate: effectiveDate);
     }
 
-    state = state.copyWith(isLoading: true, clearError: true, clearSuccess: true);
+    state = state.copyWith(
+      isLoading: true,
+      clearError: true,
+      clearSuccess: true,
+    );
     try {
       final data = await _repository.fetchAppointmentsForDoctor(
         date: _formatDate(effectiveDate)!,
@@ -103,12 +109,20 @@ class DoctorAgendaController extends Notifier<DoctorAgendaState> {
   }
 
   void setDate(DateTime? date) {
-    state = state.copyWith(selectedDate: date, clearError: true, clearSuccess: true);
+    state = state.copyWith(
+      selectedDate: date,
+      clearError: true,
+      clearSuccess: true,
+    );
     loadAgenda();
   }
 
   void setStatus(String? status) {
-    state = state.copyWith(selectedStatus: status, clearError: true, clearSuccess: true);
+    state = state.copyWith(
+      selectedStatus: status,
+      clearError: true,
+      clearSuccess: true,
+    );
     loadAgenda();
   }
 
@@ -139,8 +153,71 @@ class DoctorAgendaController extends Notifier<DoctorAgendaState> {
     }
   }
 
+  Future<void> confirmAppointment({required String appointmentId}) {
+    return _runAction(
+      successMessage: 'Cita confirmada',
+      operation: () =>
+          _repository.confirmAppointment(appointmentId: appointmentId),
+    );
+  }
+
+  Future<void> rejectAppointment({
+    required String appointmentId,
+    required String reason,
+  }) {
+    return _runAction(
+      successMessage: 'Cita rechazada',
+      operation: () => _repository.rejectAppointment(
+        appointmentId: appointmentId,
+        reason: reason,
+      ),
+    );
+  }
+
+  Future<void> rescheduleAppointment({
+    required String appointmentId,
+    required DateTime newScheduledAt,
+    String? reason,
+  }) {
+    return _runAction(
+      successMessage: 'Cita reprogramada',
+      operation: () => _repository.rescheduleAppointment(
+        appointmentId: appointmentId,
+        newScheduledAt: newScheduledAt,
+        reason: reason,
+      ),
+    );
+  }
+
+  Future<void> attendAppointment({
+    required String appointmentId,
+    required String diagnosisText,
+    String? recipeAttachmentId,
+  }) {
+    return _runAction(
+      successMessage: 'Cita marcada como atendida',
+      operation: () => _repository.attendAppointment(
+        appointmentId: appointmentId,
+        diagnosisText: diagnosisText,
+        recipeAttachmentId: recipeAttachmentId,
+      ),
+    );
+  }
+
+  Future<void> markAppointmentAbsent({required String appointmentId}) {
+    return _runAction(
+      successMessage: 'Inasistencia registrada',
+      operation: () =>
+          _repository.markAppointmentAbsent(appointmentId: appointmentId),
+    );
+  }
+
   void setSearchQuery(String value) {
-    state = state.copyWith(searchQuery: value, clearError: true, clearSuccess: true);
+    state = state.copyWith(
+      searchQuery: value,
+      clearError: true,
+      clearSuccess: true,
+    );
   }
 
   Future<void> searchPatients() async {
@@ -150,7 +227,11 @@ class DoctorAgendaController extends Notifier<DoctorAgendaState> {
       return;
     }
 
-    state = state.copyWith(isActionLoading: true, clearError: true, clearSuccess: true);
+    state = state.copyWith(
+      isActionLoading: true,
+      clearError: true,
+      clearSuccess: true,
+    );
     try {
       final results = await _repository.searchPatientsByName(query);
       state = state.copyWith(isActionLoading: false, patients: results);
@@ -197,6 +278,28 @@ class DoctorAgendaController extends Notifier<DoctorAgendaState> {
       );
     }
   }
+
+  Future<void> _runAction({
+    required String successMessage,
+    required Future<Appointment> Function() operation,
+  }) async {
+    state = state.copyWith(
+      isActionLoading: true,
+      clearError: true,
+      clearSuccess: true,
+    );
+
+    try {
+      await operation();
+      await loadAgenda();
+      state = state.copyWith(isActionLoading: false, success: successMessage);
+    } catch (error) {
+      state = state.copyWith(
+        isActionLoading: false,
+        error: _repository.resolveErrorMessage(error),
+      );
+    }
+  }
 }
 
 String? _formatDate(DateTime? date) {
@@ -209,12 +312,16 @@ String? _formatDate(DateTime? date) {
 
 int? _mapStateFilter(String? selectedStatus) {
   switch (selectedStatus) {
-    case 'pending':
+    case 'pending_confirmation':
       return 1;
-    case 'completed':
+    case 'confirmed':
       return 2;
-    case 'cancelled':
+    case 'attended':
       return 3;
+    case 'absent':
+      return 4;
+    case 'rejected':
+      return 5;
     default:
       return int.tryParse(selectedStatus ?? '');
   }
