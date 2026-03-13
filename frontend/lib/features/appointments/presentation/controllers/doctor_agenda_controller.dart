@@ -97,7 +97,7 @@ class DoctorAgendaController extends Notifier<DoctorAgendaState> {
         date: _formatDate(effectiveDate)!,
         state: _mapStateFilter(state.selectedStatus),
         doctorId: auth.profileId,
-        order: 'desc',
+        order: 'asc',
       );
       state = state.copyWith(isLoading: false, agenda: data);
     } catch (error) {

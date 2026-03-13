@@ -46,6 +46,20 @@ class AppointmentResource extends JsonResource
                 ];
             }),
             'recipe_attachment_id' => $this->recipe_attachment_id,
+            'recipe_attachment' => $this->whenLoaded('recipe', function () {
+                $disk = $this->recipe->disk ?: 'public';
+                $publicUrl = $disk === 'public' ? asset('storage/'.$this->recipe->path) : null;
+
+                return [
+                    'id' => $this->recipe->id,
+                    'path' => $this->recipe->path,
+                    'type' => $this->recipe->type,
+                    'mime' => $this->recipe->mime,
+                    'size' => $this->recipe->size,
+                    'disk' => $disk,
+                    'url' => $publicUrl,
+                ];
+            }),
             'rejection_reason' => $this->rejection_reason,
         ];
     }

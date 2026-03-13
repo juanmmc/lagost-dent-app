@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
@@ -514,6 +513,10 @@ class _PatientAppointmentDetailScreenState
     final receiptUri = _resolveAttachmentUri(receiptSource);
     final canPreviewReceipt =
       receiptUri != null && _isImageAttachment(receiptSource, receiptMime);
+    final recipePath = appointment.recipeAttachmentPath?.trim();
+    final recipeUri = _resolveAttachmentUri(recipePath);
+    final canPreviewRecipe =
+        recipeUri != null && _isImageAttachment(recipePath, null);
     final diagnosisText = appointment.diagnosis?.trim().isNotEmpty == true
         ? appointment.diagnosis!.trim()
         : 'Pendiente';
@@ -677,6 +680,53 @@ class _PatientAppointmentDetailScreenState
                   ),
                   const SizedBox(height: 8),
                   Text(prescriptionText),
+                  if (canPreviewRecipe) ...[
+                    const SizedBox(height: 12),
+                    InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () => _showReceiptPreview(
+                        context: context,
+                        imageUrl: recipeUri.toString(),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: AspectRatio(
+                          aspectRatio: 16 / 10,
+                          child: Image.network(
+                            recipeUri.toString(),
+                            fit: BoxFit.cover,
+                            loadingBuilder:
+                                (context, child, loadingProgress) {
+                                  if (loadingProgress == null) return child;
+                                  return const Center(
+                                    child: CircularProgressIndicator(),
+                                  );
+                                },
+                            errorBuilder: (_, __, ___) {
+                              return Container(
+                                color: Theme.of(context).colorScheme.surface,
+                                alignment: Alignment.center,
+                                child: const Text(
+                                  'No se pudo cargar la imagen de la receta',
+                                  textAlign: TextAlign.center,
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Toca la imagen para verla en grande y hacer zoom',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ] else if (recipePath != null && recipePath.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    const Text(
+                      'El adjunto de receta no es una imagen previsualizable.',
+                    ),
+                  ],
                 ],
               ),
             ),

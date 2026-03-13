@@ -17,22 +17,7 @@ class WelcomeScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const Spacer(),
-              const Align(child: LagosLogo(size: 120)),
-              const SizedBox(height: 18),
-              Text(
-                'LagosDent',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                'Selecciona el perfil con el que deseas ingresar',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
+              const Align(child: LagosLogo(size: 220)),
               const Spacer(),
               ElevatedButton(
                 onPressed: () => context.push('/login/patient'),

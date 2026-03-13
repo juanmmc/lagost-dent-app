@@ -9,17 +9,22 @@ class LagosLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return SizedBox(
       width: size,
       height: size,
-      decoration: const BoxDecoration(
-        color: AppColors.primary,
-        shape: BoxShape.circle,
-      ),
-      child: const Icon(
-        Icons.medical_services_rounded,
-        color: AppColors.white,
-        size: 44,
+      child: Image.asset(
+        'assets/images/logo.webp',
+        fit: BoxFit.contain,
+        errorBuilder: (_, __, ___) {
+          return Container(
+            color: AppColors.primary,
+            child: const Icon(
+              Icons.medical_services_rounded,
+              color: AppColors.white,
+              size: 44,
+            ),
+          );
+        },
       ),
     );
   }
