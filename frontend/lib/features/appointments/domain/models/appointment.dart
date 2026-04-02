@@ -227,11 +227,17 @@ class DoctorOption {
 }
 
 class PatientOption {
-  const PatientOption({required this.id, required this.name, this.phone});
+  const PatientOption({
+    required this.id,
+    required this.name,
+    this.phone,
+    this.birthdate,
+  });
 
   final String id;
   final String name;
   final String? phone;
+  final String? birthdate;
 
   factory PatientOption.fromJson(Map<String, dynamic> json) {
     return PatientOption(
@@ -240,6 +246,7 @@ class PatientOption {
         json['name'] ?? json['person']?['name'] ?? json['full_name'],
       ),
       phone: _nullableString(json['phone'] ?? json['person']?['phone']),
+      birthdate: _nullableString(json['birthdate']),
     );
   }
 }

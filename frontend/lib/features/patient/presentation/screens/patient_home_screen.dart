@@ -152,6 +152,7 @@ class _PatientAppointmentsView extends StatelessWidget {
                 appointment.doctorName ?? 'Doctor #${appointment.doctorId}',
               ),
               subtitle: Text(
+                'Paciente: ${appointment.patientName ?? 'Paciente #${appointment.patientId}'}\n'
                 '$dateText · Estado: ${appointment.statusDescriptor}',
               ),
               trailing: const Icon(Icons.chevron_right_rounded),
@@ -667,6 +668,8 @@ class _PatientAppointmentDetailScreenState
     final dateText = DateFormat(
       'dd/MM/yyyy HH:mm',
     ).format(appointment.scheduledAt);
+    final patientText =
+        appointment.patientName ?? 'Paciente #${appointment.patientId}';
     final doctorText =
         appointment.doctorName ?? 'Doctor #${appointment.doctorId}';
     final receiptUrl = appointment.depositSlipAttachmentUrl?.trim();
@@ -715,6 +718,12 @@ class _PatientAppointmentDetailScreenState
                     icon: Icons.event_outlined,
                     label: 'Fecha y hora',
                     value: dateText,
+                  ),
+                  const SizedBox(height: 10),
+                  _DetailRow(
+                    icon: Icons.person_outline,
+                    label: 'Paciente',
+                    value: patientText,
                   ),
                   const SizedBox(height: 10),
                   _DetailRow(

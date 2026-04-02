@@ -142,10 +142,16 @@ class AppointmentsRemoteDataSource {
     return rawSlots.whereType<String>().map(DateTime.parse).toList();
   }
 
-  Future<List<PatientOption>> searchPatientsByName(String query) async {
+  Future<List<PatientOption>> searchPatientsByName(
+    String query, {
+    int limit = 7,
+  }) async {
     final response = await _dio.get<dynamic>(
-      '/api/patients',
-      queryParameters: {'q': query},
+      '/api/patients/search',
+      queryParameters: {
+        'name': query.trim(),
+        'limit': limit.clamp(1, 7),
+      },
     );
 
     final list = _extractList(response.data);

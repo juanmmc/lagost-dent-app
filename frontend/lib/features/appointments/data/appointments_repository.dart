@@ -68,8 +68,11 @@ class AppointmentsRepository {
     return _remote.fetchAvailability(date: date, from: from, to: to);
   }
 
-  Future<List<PatientOption>> searchPatientsByName(String query) {
-    return _remote.searchPatientsByName(query);
+  Future<List<PatientOption>> searchPatientsByName(
+    String query, {
+    int limit = 7,
+  }) {
+    return _remote.searchPatientsByName(query, limit: limit);
   }
 
   Future<List<PatientOption>> fetchAssociatesForPatient({

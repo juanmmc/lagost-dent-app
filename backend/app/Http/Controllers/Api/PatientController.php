@@ -86,7 +86,7 @@ class PatientController extends Controller
 
         $patients = Patient::with('person')
             ->whereHas('person', function ($q) use ($name) {
-                $q->where('name', 'like', '%'.$name.'%');
+                $q->where('name', 'ilike', '%'.$name.'%');
             })
             ->orderBy('created_at', 'desc')
             ->limit($limit)
