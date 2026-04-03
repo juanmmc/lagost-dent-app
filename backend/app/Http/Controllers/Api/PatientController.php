@@ -53,7 +53,7 @@ class PatientController extends Controller
     public function allergies(string $id): JsonResponse
     {
         $patient = Patient::findOrFail($id);
-        $allergies = $patient->hasMany(\App\Models\PatientAllergy::class)->get();
+        $allergies = $patient->hasMany(PatientAllergy::class)->get();
         return response()->json($allergies);
     }
 

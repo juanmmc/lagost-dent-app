@@ -29,6 +29,7 @@ class AppointmentController extends Controller
             'date' => ['required','date'],
             'state' => ['nullable','integer'],
             'doctor_id' => ['nullable','uuid'],
+            'patient_id' => ['nullable','uuid'],
             'order' => ['nullable','in:asc,desc'],
         ]);
 
@@ -40,6 +41,9 @@ class AppointmentController extends Controller
         }
         if ($request->filled('doctor_id')) {
             $query->where('doctor_id', $request->input('doctor_id'));
+        }
+        if ($request->filled('patient_id')) {
+            $query->where('patient_id', $request->input('patient_id'));
         }
 
         $order = $request->input('order', 'desc');

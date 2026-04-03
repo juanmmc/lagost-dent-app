@@ -17,14 +17,18 @@ class AppointmentsRepository {
   Future<List<Appointment>> fetchAppointments({
     String? date,
     String? status,
+    int? state,
     String? patientId,
     String? doctorId,
+    String? order,
   }) {
     return _remote.fetchAppointments(
       date: date,
       status: status,
+      state: state,
       patientId: patientId,
       doctorId: doctorId,
+      order: order,
     );
   }
 
@@ -42,12 +46,14 @@ class AppointmentsRepository {
     required String date,
     int? state,
     String? doctorId,
+    String? patientId,
     String order = 'desc',
   }) {
     return _remote.fetchAppointmentsForDoctor(
       date: date,
       state: state,
       doctorId: doctorId,
+      patientId: patientId,
       order: order,
     );
   }
@@ -108,6 +114,16 @@ class AppointmentsRepository {
       scheduledAt: scheduledAt,
       depositSlipAttachmentId: depositSlipAttachmentId,
       byTitular: byTitular,
+    );
+  }
+
+  Future<void> createAppointmentByDoctor({
+    required String patientId,
+    required DateTime scheduledAt,
+  }) {
+    return _remote.createAppointmentByDoctor(
+      patientId: patientId,
+      scheduledAt: scheduledAt,
     );
   }
 

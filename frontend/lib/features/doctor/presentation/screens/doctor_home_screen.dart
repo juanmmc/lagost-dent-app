@@ -265,7 +265,8 @@ class _DoctorAppointmentDetailScreenState
       orElse: () => widget.initialAppointment,
     );
     final detailed = _detailedAppointment;
-    final appointment = _shouldPreferAgendaAppointment(
+    final appointment =
+        _shouldPreferAgendaAppointment(
           agendaAppointment: fallbackAppointment,
           detailedAppointment: detailed,
         )
@@ -278,14 +279,15 @@ class _DoctorAppointmentDetailScreenState
     final receiptUrl = appointment.depositSlipAttachmentUrl?.trim();
     final receiptPath = appointment.depositSlipAttachmentPath?.trim();
     final receiptMime = appointment.depositSlipAttachmentMime?.trim();
-    final receiptSource =
-        receiptUrl != null && receiptUrl.isNotEmpty ? receiptUrl : receiptPath;
+    final receiptSource = receiptUrl != null && receiptUrl.isNotEmpty
+        ? receiptUrl
+        : receiptPath;
     final receiptUri = _resolveAttachmentUri(receiptSource);
     final canPreviewReceipt =
-      receiptUri != null && _isImageAttachment(receiptSource, receiptMime);
+        receiptUri != null && _isImageAttachment(receiptSource, receiptMime);
     final imageHeaders = authToken == null || authToken.isEmpty
-      ? null
-      : <String, String>{'Authorization': 'Bearer $authToken'};
+        ? null
+        : <String, String>{'Authorization': 'Bearer $authToken'};
 
     final recipePath = appointment.recipeAttachmentPath?.trim();
     final recipeUri = _resolveAttachmentUri(recipePath);
@@ -373,13 +375,12 @@ class _DoctorAppointmentDetailScreenState
                             receiptUri.toString(),
                             headers: imageHeaders,
                             fit: BoxFit.cover,
-                            loadingBuilder:
-                                (context, child, loadingProgress) {
-                                  if (loadingProgress == null) return child;
-                                  return const Center(
-                                    child: CircularProgressIndicator(),
-                                  );
-                                },
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return const Center(
+                                child: CircularProgressIndicator(),
+                              );
+                            },
                             errorBuilder: (_, _, _) {
                               return Container(
                                 color: Theme.of(context).colorScheme.surface,
@@ -399,15 +400,15 @@ class _DoctorAppointmentDetailScreenState
                       'Toca la imagen para verla en grande y hacer zoom',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
-                  ] else if (
-                    receiptSource != null && receiptSource.isNotEmpty
-                  ) ...[
+                  ] else if (receiptSource != null &&
+                      receiptSource.isNotEmpty) ...[
                     const SizedBox(height: 8),
                     const Text(
                       'El comprobante adjunto no es una imagen previsualizable.',
                     ),
                   ],
-                  if (appointment.depositSlipAttachmentUrl?.isNotEmpty == true) ...[
+                  if (appointment.depositSlipAttachmentUrl?.isNotEmpty ==
+                      true) ...[
                     const SizedBox(height: 4),
                     SelectableText(
                       'URL: ${appointment.depositSlipAttachmentUrl}',
@@ -473,13 +474,12 @@ class _DoctorAppointmentDetailScreenState
                             recipeUri.toString(),
                             headers: imageHeaders,
                             fit: BoxFit.cover,
-                            loadingBuilder:
-                                (context, child, loadingProgress) {
-                                  if (loadingProgress == null) return child;
-                                  return const Center(
-                                    child: CircularProgressIndicator(),
-                                  );
-                                },
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return const Center(
+                                child: CircularProgressIndicator(),
+                              );
+                            },
                             errorBuilder: (_, _, _) {
                               return Container(
                                 color: Theme.of(context).colorScheme.surface,
@@ -735,7 +735,9 @@ class _DoctorAppointmentDetailScreenState
     final detailedStatus = detailedAppointment.statusDescriptor
         .trim()
         .toLowerCase();
-    final agendaStatus = agendaAppointment.statusDescriptor.trim().toLowerCase();
+    final agendaStatus = agendaAppointment.statusDescriptor
+        .trim()
+        .toLowerCase();
     return detailedStatus != agendaStatus;
   }
 
@@ -920,8 +922,7 @@ Future<String?> _askRequiredText(
 
 Future<(DateTime, String?)?> _askRescheduleData(
   BuildContext context, {
-  required Future<List<TimeOfDay>> Function(DateTime date)
-  loadAvailableSlots,
+  required Future<List<TimeOfDay>> Function(DateTime date) loadAvailableSlots,
 }) async {
   DateTime? selectedDate;
   TimeOfDay? selectedTime;
@@ -964,8 +965,7 @@ Future<(DateTime, String?)?> _askRescheduleData(
                     isLoadingAvailability = false;
                   });
                 } catch (error) {
-                  final message =
-                      error is StateError
+                  final message = error is StateError
                       ? error.message.toString()
                       : 'No se pudo consultar la disponibilidad';
                   setState(() {
@@ -1128,17 +1128,16 @@ class _DoctorSearchPatientView extends ConsumerWidget {
                             ? 'Tel: ${patient.phone}'
                             : 'ID: ${patient.id}',
                       ),
-                      trailing: TextButton(
-                        onPressed: () => _showBookForPatientDialog(
-                          context,
-                          patientId: patient.id,
-                          onConfirm: (scheduledAt) => controller.bookForPatient(
-                            patientId: patient.id,
-                            scheduledAt: scheduledAt,
+                      trailing: const Icon(Icons.chevron_right_rounded),
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => _DoctorPatientAppointmentsScreen(
+                              patient: patient,
+                            ),
                           ),
-                        ),
-                        child: const Text('Agendar'),
-                      ),
+                        );
+                      },
                     ),
                   );
                 },
@@ -1150,13 +1149,274 @@ class _DoctorSearchPatientView extends ConsumerWidget {
   }
 }
 
+class _DoctorPatientAppointmentsScreen extends ConsumerStatefulWidget {
+  const _DoctorPatientAppointmentsScreen({required this.patient});
+
+  final PatientOption patient;
+
+  @override
+  ConsumerState<_DoctorPatientAppointmentsScreen> createState() =>
+      _DoctorPatientAppointmentsScreenState();
+}
+
+class _DoctorPatientAppointmentsScreenState
+    extends ConsumerState<_DoctorPatientAppointmentsScreen> {
+  late DateTime _selectedDate;
+  bool _isLoading = false;
+  bool _isBooking = false;
+  String? _error;
+  List<Appointment> _appointments = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedDate = DateTime.now();
+    Future<void>.microtask(_loadAppointments);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text(widget.patient.name)),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Citas del paciente',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    widget.patient.phone?.trim().isNotEmpty == true
+                        ? 'Tel: ${widget.patient.phone}'
+                        : 'ID: ${widget.patient.id}',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _isLoading ? null : _pickDate,
+                          icon: const Icon(Icons.event_rounded),
+                          label: Text(
+                            DateFormat('dd/MM/yyyy').format(_selectedDate),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      FilledButton.icon(
+                        onPressed: _isBooking ? null : _bookAppointment,
+                        icon: _isBooking
+                            ? const SizedBox(
+                                width: 14,
+                                height: 14,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Icon(Icons.add_rounded),
+                        label: Text(_isBooking ? 'Agendando...' : 'Agendar'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          if (_isLoading)
+            const Center(child: CircularProgressIndicator())
+          else if (_error != null)
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.error_outline_rounded),
+                title: Text(_error!),
+              ),
+            )
+          else if (_appointments.isEmpty)
+            const Card(
+              child: ListTile(
+                title: Text('No hay citas para esta fecha'),
+                subtitle: Text(
+                  'Selecciona otra fecha o agenda una nueva cita.',
+                ),
+              ),
+            )
+          else
+            ..._appointments.map((appointment) {
+              final dateText = DateFormat(
+                'dd/MM/yyyy HH:mm',
+              ).format(appointment.scheduledAt);
+
+              return Card(
+                margin: const EdgeInsets.only(bottom: 8),
+                child: ListTile(
+                  title: Text(
+                    dateText,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  subtitle: Text(appointment.statusDescriptor),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => _DoctorAppointmentDetailScreen(
+                          appointmentId: appointment.id,
+                          initialAppointment: appointment,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              );
+            }),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _pickDate() async {
+    final now = DateTime.now();
+    final selected = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(now.year - 1),
+      lastDate: DateTime(now.year + 2),
+    );
+
+    if (selected == null) return;
+    setState(() => _selectedDate = selected);
+    await _loadAppointments();
+  }
+
+  Future<void> _bookAppointment() async {
+    setState(() => _isBooking = true);
+    try {
+      final auth = ref.read(authControllerProvider).session;
+      if (auth == null) {
+        throw StateError('Sesion no disponible');
+      }
+
+      final repository = ref.read(appointmentsRepositoryProvider);
+
+      await _showBookForPatientDialog(
+        context,
+        patientId: widget.patient.id,
+        loadAvailableSlots: _fetchAvailableSlotsForDate,
+        onConfirm: (scheduledAt) {
+          return repository.createAppointmentByDoctor(
+            patientId: widget.patient.id,
+            scheduledAt: scheduledAt,
+          );
+        },
+      );
+
+      if (!mounted) return;
+      await _loadAppointments();
+    } catch (error) {
+      if (!mounted) return;
+      final repository = ref.read(appointmentsRepositoryProvider);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(repository.resolveErrorMessage(error))),
+      );
+    } finally {
+      if (mounted) setState(() => _isBooking = false);
+    }
+  }
+
+  Future<void> _loadAppointments() async {
+    final auth = ref.read(authControllerProvider).session;
+    if (auth == null) {
+      setState(() {
+        _error = 'Sesion no disponible';
+        _appointments = const [];
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final repository = ref.read(appointmentsRepositoryProvider);
+      final list = await repository.fetchAppointmentsForDoctor(
+        date: _toApiDate(_selectedDate),
+        doctorId: auth.profileId,
+        patientId: widget.patient.id,
+        order: 'desc',
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _appointments = list;
+        _isLoading = false;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      final repository = ref.read(appointmentsRepositoryProvider);
+      setState(() {
+        _appointments = const [];
+        _isLoading = false;
+        _error = repository.resolveErrorMessage(error);
+      });
+    }
+  }
+
+  String _toApiDate(DateTime date) {
+    final year = date.year.toString().padLeft(4, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    final day = date.day.toString().padLeft(2, '0');
+    return '$year-$month-$day';
+  }
+
+  Future<List<TimeOfDay>> _fetchAvailableSlotsForDate(DateTime date) async {
+    try {
+      final repository = ref.read(appointmentsRepositoryProvider);
+      final rawSlots = await repository.fetchAvailability(date: date);
+
+      final slots =
+          rawSlots
+              .map((slot) => slot.toLocal())
+              .map((slot) => TimeOfDay(hour: slot.hour, minute: slot.minute))
+              .toSet()
+              .toList()
+            ..sort(
+              (a, b) => (a.hour * 60 + a.minute) - (b.hour * 60 + b.minute),
+            );
+
+      return slots;
+    } catch (error) {
+      final repository = ref.read(appointmentsRepositoryProvider);
+      throw StateError(repository.resolveErrorMessage(error));
+    }
+  }
+}
+
 Future<void> _showBookForPatientDialog(
   BuildContext context, {
   required String patientId,
+  required Future<List<TimeOfDay>> Function(DateTime date) loadAvailableSlots,
   required Future<void> Function(DateTime scheduledAt) onConfirm,
 }) async {
-  DateTime? date;
-  TimeOfDay? time;
+  DateTime? selectedDate;
+  TimeOfDay? selectedTime;
+  List<TimeOfDay> availableSlots = const [];
+  bool isLoadingAvailability = false;
+  String? availabilityError;
 
   await showDialog<void>(
     context: context,
@@ -1172,38 +1432,99 @@ Future<void> _showBookForPatientDialog(
             OutlinedButton.icon(
               onPressed: () async {
                 final now = DateTime.now();
-                final selected = await showDatePicker(
+                final picked = await showDatePicker(
                   context: context,
-                  initialDate: now,
+                  initialDate: selectedDate ?? now,
                   firstDate: now,
                   lastDate: DateTime(now.year + 2),
                 );
-                if (selected != null) {
-                  setState(() => date = selected);
+                if (picked == null) return;
+
+                setState(() {
+                  selectedDate = picked;
+                  selectedTime = null;
+                  availableSlots = const [];
+                  availabilityError = null;
+                  isLoadingAvailability = true;
+                });
+
+                try {
+                  final slots = await loadAvailableSlots(picked);
+                  setState(() {
+                    availableSlots = slots;
+                    isLoadingAvailability = false;
+                  });
+                } catch (error) {
+                  final message = error is StateError
+                      ? error.message.toString()
+                      : 'No se pudo consultar la disponibilidad';
+                  setState(() {
+                    availableSlots = const [];
+                    isLoadingAvailability = false;
+                    availabilityError = message;
+                  });
                 }
               },
               icon: const Icon(Icons.event),
               label: Text(
-                date == null
+                selectedDate == null
                     ? 'Seleccionar fecha'
-                    : DateFormat('dd/MM/yyyy').format(date!),
+                    : DateFormat('dd/MM/yyyy').format(selectedDate!),
               ),
             ),
-            OutlinedButton.icon(
-              onPressed: () async {
-                final selected = await showTimePicker(
-                  context: context,
-                  initialTime: TimeOfDay.now(),
-                );
-                if (selected != null) {
-                  setState(() => time = selected);
-                }
-              },
-              icon: const Icon(Icons.schedule),
-              label: Text(
-                time == null ? 'Seleccionar hora' : time!.format(context),
+            const SizedBox(height: 8),
+            if (selectedDate == null)
+              const ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(Icons.schedule_rounded),
+                title: Text('Primero selecciona una fecha'),
+              )
+            else if (isLoadingAvailability)
+              const ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                title: Text('Consultando horas disponibles...'),
+              )
+            else if (availabilityError != null)
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.error_outline),
+                title: Text(availabilityError!),
+              )
+            else if (availableSlots.isEmpty)
+              const ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(Icons.event_busy_outlined),
+                title: Text('No hay horas disponibles en esta fecha'),
+              )
+            else
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    selectedTime == null
+                        ? 'Selecciona una hora'
+                        : 'Hora seleccionada: ${selectedTime!.format(context)}',
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: availableSlots.map((slot) {
+                      final selected = selectedTime == slot;
+                      return ChoiceChip(
+                        label: Text(slot.format(context)),
+                        selected: selected,
+                        onSelected: (_) => setState(() => selectedTime = slot),
+                      );
+                    }).toList(),
+                  ),
+                ],
               ),
-            ),
           ],
         ),
         actions: [
@@ -1213,14 +1534,14 @@ Future<void> _showBookForPatientDialog(
           ),
           FilledButton(
             onPressed: () async {
-              if (date == null || time == null) return;
+              if (selectedDate == null || selectedTime == null) return;
 
               final scheduledAt = DateTime(
-                date!.year,
-                date!.month,
-                date!.day,
-                time!.hour,
-                time!.minute,
+                selectedDate!.year,
+                selectedDate!.month,
+                selectedDate!.day,
+                selectedTime!.hour,
+                selectedTime!.minute,
               );
 
               await onConfirm(scheduledAt);

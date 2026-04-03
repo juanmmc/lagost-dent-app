@@ -26,16 +26,20 @@ class AppointmentsRemoteDataSource {
   Future<List<Appointment>> fetchAppointments({
     String? date,
     String? status,
+    int? state,
     String? patientId,
     String? doctorId,
+    String? order,
   }) async {
     final response = await _dio.get<dynamic>(
       _genericListPath,
       queryParameters: {
         if (date != null && date.isNotEmpty) 'date': date,
         if (status != null && status.isNotEmpty) 'status': status,
+        if (state != null) 'state': state,
         if (patientId != null && patientId.isNotEmpty) 'patient_id': patientId,
         if (doctorId != null && doctorId.isNotEmpty) 'doctor_id': doctorId,
+        if (order != null && order.isNotEmpty) 'order': order,
       },
     );
 
@@ -71,11 +75,15 @@ class AppointmentsRemoteDataSource {
     required String date,
     int? state,
     String? doctorId,
+    String? patientId,
     String order = 'desc',
   }) async {
     final query = <String, dynamic>{'date': date, 'order': order};
     if (state != null) query['state'] = state;
     if (doctorId != null && doctorId.isNotEmpty) query['doctor_id'] = doctorId;
+    if (patientId != null && patientId.isNotEmpty) {
+      query['patient_id'] = patientId;
+    }
 
     try {
       final response = await _dio.get<dynamic>(
@@ -88,11 +96,19 @@ class AppointmentsRemoteDataSource {
           .map(Appointment.fromJson)
           .toList();
     } on DioException {
-      return fetchAppointments(date: date, doctorId: doctorId);
+      return fetchAppointments(
+        date: date,
+        state: state,
+        patientId: patientId,
+        doctorId: doctorId,
+        order: order,
+      );
     }
   }
 
-  Future<Appointment> fetchAppointmentDetail({required String appointmentId}) async {
+  Future<Appointment> fetchAppointmentDetail({
+    required String appointmentId,
+  }) async {
     final response = await _dio.get<dynamic>(
       _detailPath.replaceFirst('{id}', appointmentId),
     );
@@ -148,10 +164,7 @@ class AppointmentsRemoteDataSource {
   }) async {
     final response = await _dio.get<dynamic>(
       '/api/patients/search',
-      queryParameters: {
-        'name': query.trim(),
-        'limit': limit.clamp(1, 7),
-      },
+      queryParameters: {'name': query.trim(), 'limit': limit.clamp(1, 7)},
     );
 
     final list = _extractList(response.data);
@@ -214,6 +227,19 @@ class AppointmentsRemoteDataSource {
         if (depositSlipAttachmentId != null &&
             depositSlipAttachmentId.isNotEmpty)
           'deposit_slip_attachment_id': depositSlipAttachmentId,
+      },
+    );
+  }
+
+  Future<void> createAppointmentByDoctor({
+    required String patientId,
+    required DateTime scheduledAt,
+  }) async {
+    await _dio.post<void>(
+      '/api/appointments/by-doctor',
+      data: {
+        'patient_id': patientId,
+        'scheduled_at': _formatDateTimeForBackend(scheduledAt),
       },
     );
   }

@@ -169,6 +169,7 @@ Notas:
 		- `date` (requerido) `YYYY-MM-DD`
 		- `state` (opcional) `int` (ver estados)
 		- `doctor_id` (opcional) `uuid`
+		- `patient_id` (opcional) `uuid`
 		- `order` (opcional) `asc|desc` (por `scheduled_at`)
 	- `200 OK` → lista de `AppointmentResource`
 	- `403 Forbidden` si token sin ability
