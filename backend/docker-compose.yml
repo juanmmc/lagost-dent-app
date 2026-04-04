@@ -1,0 +1,50 @@
+name: Lagos-Dent
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: lagos-dent-app
+    restart: unless-stopped
+    ports:
+      - "9999:9999"
+    environment:
+      APP_ENV: production
+      APP_DEBUG: "false"
+      APP_URL: http://localhost:9999
+      APP_KEY: base64:a6jatg+7zzmlqpWTwK3EiuDjv8JUySror6BrKz0DJYI=
+      DB_CONNECTION: pgsql
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_DATABASE: lagos_dent
+      DB_USERNAME: laravel
+      DB_PASSWORD: 2da79546579c8b9e5c1a0f2c8e7b4
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - attachments_data:/var/www/storage/app/public/attachments
+    command: >
+      sh -c "php artisan migrate --force &&
+      (php artisan storage:link || true) &&
+      php artisan serve --host=0.0.0.0 --port=9999"
+
+  db:
+    image: postgres:16-alpine
+    container_name: lagos-dent-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: lagos_dent
+      POSTGRES_USER: laravel
+      POSTGRES_PASSWORD: 2da79546579c8b9e5c1a0f2c8e7b4
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U laravel -d lagos_dent"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
+  attachments_data:
