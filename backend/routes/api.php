@@ -21,10 +21,10 @@ Route::get('/doctors', [DoctorController::class, 'listActive']);
 Route::middleware('auth:sanctum')->group(function () {
     // Patients context (requires patient ability)
     Route::middleware('abilities:patient')->group(function () {
-        Route::get('/patients/{id}', [PatientController::class, 'show'])->whereNumber('id');
-        Route::get('/patients/{id}/diagnoses', [PatientController::class, 'diagnoses'])->whereNumber('id');
-        Route::get('/patients/{id}/associates', [PatientController::class, 'associates'])->whereNumber('id');
-        Route::get('/patients/{id}/appointments', [AppointmentController::class, 'listForPatient'])->whereNumber('id');
+        Route::get('/patients/{id}', [PatientController::class, 'show'])->whereUuid('id');
+        Route::get('/patients/{id}/diagnoses', [PatientController::class, 'diagnoses'])->whereUuid('id');
+        Route::get('/patients/{id}/associates', [PatientController::class, 'associates'])->whereUuid('id');
+        Route::get('/patients/{id}/appointments', [AppointmentController::class, 'listForPatient'])->whereUuid('id');
 
         // Appointments from patient
         Route::post('/appointments', [AppointmentController::class, 'schedule']);
@@ -33,7 +33,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Shared appointment detail (any of patient or doctor)
     Route::middleware('ability:patient,doctor')->group(function () {
-        Route::get('/patients/{id}/allergies', [PatientController::class, 'allergies'])->whereNumber('id');
+        Route::get('/patients/{id}/allergies', [PatientController::class, 'allergies'])->whereUuid('id');
+        Route::get('/appointments', [AppointmentController::class, 'list']);
         Route::get('/appointments/availability', [AppointmentController::class, 'availability']);
         Route::get('/appointments/{id}', [AppointmentController::class, 'show'])->whereUuid('id');
         // Attachments upload allowed by both for now
@@ -43,8 +44,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Doctor context (requires doctor ability)
     Route::middleware('abilities:doctor')->group(function () {
         Route::get('/patients/search', [PatientController::class, 'search']);
-        Route::post('/patients/{id}/allergies', [PatientController::class, 'addAllergy'])->whereNumber('id');
-        Route::get('/appointments', [AppointmentController::class, 'listForDoctor']);
+        Route::post('/patients/{id}/allergies', [PatientController::class, 'addAllergy'])->whereUuid('id');
         // Backward compatibility with clients that call this explicit endpoint.
         Route::get('/appointments/listForDoctor', [AppointmentController::class, 'listForDoctor']);
         Route::post('/appointments/by-doctor', [AppointmentController::class, 'scheduleByDoctor']);

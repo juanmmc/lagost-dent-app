@@ -16,8 +16,7 @@ class AppointmentsRemoteDataSource {
   final Dio _dio;
 
   static const String _listForPatientPath = '/api/patients/{id}/appointments';
-  static const String _associatesForPatientPath =
-      '/api/patients/{id}/associates';
+  static const String _associatesForPatientPath = '/api/patients/{id}/associates';
   static const String _listForDoctorPath = '/api/appointments/listForDoctor';
   static const String _genericListPath = '/api/appointments';
   static const String _detailPath = '/api/appointments/{id}';
@@ -34,12 +33,12 @@ class AppointmentsRemoteDataSource {
     final response = await _dio.get<dynamic>(
       _genericListPath,
       queryParameters: {
-        if (date != null && date.isNotEmpty) 'date': date,
-        if (status != null && status.isNotEmpty) 'status': status,
-        if (state != null) 'state': state,
-        if (patientId != null && patientId.isNotEmpty) 'patient_id': patientId,
-        if (doctorId != null && doctorId.isNotEmpty) 'doctor_id': doctorId,
-        if (order != null && order.isNotEmpty) 'order': order,
+        if (date?.isNotEmpty ?? false) 'date': date,
+        if (status?.isNotEmpty ?? false) 'status': status,
+        'state': ?state,
+        if (patientId?.isNotEmpty ?? false) 'patient_id': patientId,
+        if (doctorId?.isNotEmpty ?? false) 'doctor_id': doctorId,
+        if (order?.isNotEmpty ?? false) 'order': order,
       },
     );
 
@@ -66,8 +65,12 @@ class AppointmentsRemoteDataSource {
           .whereType<Map<String, dynamic>>()
           .map(Appointment.fromJson)
           .toList();
-    } on DioException {
-      return fetchAppointments(patientId: patientId);
+    } on DioException catch (error) {
+      final statusCode = error.response?.statusCode;
+      if (statusCode == 404 || statusCode == 405) {
+        return fetchAppointments(patientId: patientId, order: order);
+      }
+      rethrow;
     }
   }
 
@@ -80,8 +83,8 @@ class AppointmentsRemoteDataSource {
   }) async {
     final query = <String, dynamic>{'date': date, 'order': order};
     if (state != null) query['state'] = state;
-    if (doctorId != null && doctorId.isNotEmpty) query['doctor_id'] = doctorId;
-    if (patientId != null && patientId.isNotEmpty) {
+    if (doctorId?.isNotEmpty ?? false) query['doctor_id'] = doctorId;
+    if (patientId?.isNotEmpty ?? false) {
       query['patient_id'] = patientId;
     }
 
@@ -118,7 +121,7 @@ class AppointmentsRemoteDataSource {
   Future<List<DoctorOption>> fetchDoctors({String? query}) async {
     final response = await _dio.get<dynamic>(
       '/api/doctors',
-      queryParameters: {if (query != null && query.isNotEmpty) 'q': query},
+      queryParameters: {if (query?.isNotEmpty ?? false) 'q': query},
     );
 
     final list = _extractList(response.data);
@@ -224,8 +227,7 @@ class AppointmentsRemoteDataSource {
         'patient_id': patientId,
         'doctor_id': doctorId,
         'scheduled_at': _formatDateTimeForBackend(scheduledAt),
-        if (depositSlipAttachmentId != null &&
-            depositSlipAttachmentId.isNotEmpty)
+        if (depositSlipAttachmentId?.isNotEmpty ?? false)
           'deposit_slip_attachment_id': depositSlipAttachmentId,
       },
     );
@@ -270,7 +272,7 @@ class AppointmentsRemoteDataSource {
       '/api/appointments/$appointmentId/reschedule',
       data: {
         'new_scheduled_at': _formatDateTimeForBackend(newScheduledAt),
-        if (reason != null && reason.trim().isNotEmpty) 'reason': reason.trim(),
+        if (reason?.trim().isNotEmpty ?? false) 'reason': reason!.trim(),
       },
     );
 
@@ -308,8 +310,8 @@ class AppointmentsRemoteDataSource {
       '/api/appointments/$appointmentId/attend',
       data: {
         'diagnosis_text': diagnosisText,
-        if (recipeAttachmentId != null && recipeAttachmentId.trim().isNotEmpty)
-          'recipe_attachment_id': recipeAttachmentId.trim(),
+        if (recipeAttachmentId?.trim().isNotEmpty ?? false)
+          'recipe_attachment_id': recipeAttachmentId!.trim(),
       },
     );
 

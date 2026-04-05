@@ -20,6 +20,41 @@ use Illuminate\Support\Facades\DB;
 
 class AppointmentController extends Controller
 {
+    public function list(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        if (!$user) {
+            return response()->json(['message' => 'No autenticado'], 401);
+        }
+
+        if ($user->tokenCan('doctor')) {
+            return $this->listForDoctor($request);
+        }
+
+        if ($user->tokenCan('patient')) {
+            $user->load('patient');
+            if (!$user->patient) {
+                return response()->json(['message' => 'No autenticado como paciente'], 401);
+            }
+
+            $principalPatientId = $user->patient->id;
+            $associatedIds = PatientRelation::where('titular_patient_id', $principalPatientId)
+                ->pluck('associated_patient_id');
+            $allowedPatientIds = $associatedIds->prepend($principalPatientId);
+
+            $requestedPatientId = $request->input('patient_id');
+            if ($requestedPatientId && !$allowedPatientIds->contains($requestedPatientId)) {
+                return response()->json(['message' => 'No autorizado'], 403);
+            }
+
+            $effectivePatientId = $requestedPatientId ?: $principalPatientId;
+
+            return $this->listForPatientContext($request, $effectivePatientId);
+        }
+
+        return response()->json(['message' => 'No autorizado'], 403);
+    }
+
     public function listForDoctor(Request $request): JsonResponse
     {
         if (!$request->user() || !$request->user()->tokenCan('doctor')) {
@@ -58,6 +93,11 @@ class AppointmentController extends Controller
             return response()->json(['message' => 'No autorizado'], 403);
         }
 
+        return $this->listForPatientContext($request, $patientId);
+    }
+
+    private function listForPatientContext(Request $request, string $patientId): JsonResponse
+    {
         $associatedIds = PatientRelation::where('titular_patient_id', $patientId)
             ->pluck('associated_patient_id');
 
