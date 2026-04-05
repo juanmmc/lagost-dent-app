@@ -16,6 +16,7 @@ use App\Models\PatientRelation;
 use App\Enums\AppointmentStatus;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use App\Jobs\SendAppointmentPushJob;
 use Illuminate\Support\Facades\DB;
 
 class AppointmentController extends Controller
@@ -151,7 +152,16 @@ class AppointmentController extends Controller
                 'deposit_slip_attachment_id' => $data['deposit_slip_attachment_id'],
             ]);
 
-            return response()->json(new AppointmentResource($appointment->load(['doctor.person','patient.person'])), 201);
+            $appointment->load(['doctor.person', 'patient.person']);
+
+            SendAppointmentPushJob::dispatch(
+                $appointment->doctor->person_id,
+                'Nueva cita por confirmar',
+                'Tienes una nueva cita pendiente para el ' . $appointment->scheduled_at->format('d/m/Y H:i'),
+                ['appointment_id' => $appointment->id, 'event' => 'pending_confirmation'],
+            );
+
+            return response()->json(new AppointmentResource($appointment), 201);
         });
     }
 
@@ -212,7 +222,16 @@ class AppointmentController extends Controller
                 'deposit_slip_attachment_id' => $data['deposit_slip_attachment_id'] ?? null,
             ]);
 
-            return response()->json(new AppointmentResource($appointment->load(['doctor.person','patient.person'])), 201);
+            $appointment->load(['doctor.person', 'patient.person']);
+
+            SendAppointmentPushJob::dispatch(
+                $appointment->patient->person_id,
+                'Cita confirmada',
+                'Tu cita ha sido agendada para el ' . $appointment->scheduled_at->format('d/m/Y H:i'),
+                ['appointment_id' => $appointment->id, 'event' => 'confirmed'],
+            );
+
+            return response()->json(new AppointmentResource($appointment), 201);
         });
     }
 
@@ -244,7 +263,16 @@ class AppointmentController extends Controller
             $appointment->scheduled_at = $data['new_scheduled_at'];
             $appointment->save();
 
-            return response()->json(new AppointmentResource($appointment->fresh()->load(['doctor.person','patient.person'])));
+            $appointment->load(['doctor.person', 'patient.person']);
+
+            SendAppointmentPushJob::dispatch(
+                $appointment->patient->person_id,
+                'Cita reprogramada',
+                'Tu cita fue reprogramada para el ' . $appointment->scheduled_at->format('d/m/Y H:i'),
+                ['appointment_id' => $appointment->id, 'event' => 'rescheduled'],
+            );
+
+            return response()->json(new AppointmentResource($appointment));
         });
     }
 
@@ -261,6 +289,15 @@ class AppointmentController extends Controller
         $appointment->status = AppointmentStatus::Confirmed;
         $appointment->confirmed_at = now();
         $appointment->save();
+
+        $appointment->load('patient');
+        SendAppointmentPushJob::dispatch(
+            $appointment->patient->person_id,
+            'Cita confirmada',
+            'Tu cita del ' . $appointment->scheduled_at->format('d/m/Y H:i') . ' fue confirmada',
+            ['appointment_id' => $appointment->id, 'event' => 'confirmed'],
+        );
+
         return response()->json(new AppointmentResource($appointment));
     }
 
@@ -277,6 +314,15 @@ class AppointmentController extends Controller
         $appointment->rejected_at = now();
         $appointment->rejection_reason = $request->validated()['reason'];
         $appointment->save();
+
+        $appointment->load('patient');
+        SendAppointmentPushJob::dispatch(
+            $appointment->patient->person_id,
+            'Cita rechazada',
+            'Tu cita del ' . $appointment->scheduled_at->format('d/m/Y H:i') . ' fue rechazada',
+            ['appointment_id' => $appointment->id, 'event' => 'rejected'],
+        );
+
         return response()->json(new AppointmentResource($appointment));
     }
 
@@ -306,6 +352,15 @@ class AppointmentController extends Controller
         $appointment->status = AppointmentStatus::Absent;
         $appointment->absent_at = now();
         $appointment->save();
+
+        $appointment->load('patient');
+        SendAppointmentPushJob::dispatch(
+            $appointment->patient->person_id,
+            'Ausencia registrada',
+            'Se registró tu ausencia en la cita del ' . $appointment->scheduled_at->format('d/m/Y H:i'),
+            ['appointment_id' => $appointment->id, 'event' => 'absent'],
+        );
+
         return response()->json(new AppointmentResource($appointment));
     }
 

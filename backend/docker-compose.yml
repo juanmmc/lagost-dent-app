@@ -1,5 +1,3 @@
-version: "2.4"
-
 services:
   app:
     build:
@@ -14,6 +12,7 @@ services:
       APP_DEBUG: "false"
       APP_URL: http://localhost:9999
       APP_KEY: base64:a6jatg+7zzmlqpWTwK3EiuDjv8JUySror6BrKz0DJYI=
+      FIREBASE_CREDENTIALS: /var/www/storage/app/private/firebase-admin.json
       DB_CONNECTION: pgsql
       DB_HOST: db
       DB_PORT: 5432
@@ -25,10 +24,45 @@ services:
         condition: service_healthy
     volumes:
       - attachments_data:/var/www/storage/app/public/attachments
+      - type: bind
+        source: ./storage/app/private/lagos-dent-v1-firebase-adminsdk-fbsvc-402b69dd3a.json
+        target: /var/www/storage/app/private/firebase-admin.json
+        read_only: true
     command: >
       sh -c "php artisan migrate --force &&
       (php artisan storage:link || true) &&
       php artisan serve --host=0.0.0.0 --port=9999"
+
+  queue:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: lagos-dent-queue
+    restart: unless-stopped
+    environment:
+      APP_ENV: production
+      APP_DEBUG: "false"
+      APP_URL: http://localhost:9999
+      APP_KEY: base64:a6jatg+7zzmlqpWTwK3EiuDjv8JUySror6BrKz0DJYI=
+      FIREBASE_CREDENTIALS: /var/www/storage/app/private/firebase-admin.json
+      DB_CONNECTION: pgsql
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_DATABASE: lagos_dent
+      DB_USERNAME: laravel
+      DB_PASSWORD: 2da79546579c8b9e5c1a0f2c8e7b4
+    depends_on:
+      db:
+        condition: service_healthy
+      app:
+        condition: service_started
+    volumes:
+      - attachments_data:/var/www/storage/app/public/attachments
+      - type: bind
+        source: ./storage/app/private/lagos-dent-v1-firebase-adminsdk-fbsvc-402b69dd3a.json
+        target: /var/www/storage/app/private/firebase-admin.json
+        read_only: true
+    command: php artisan queue:work --tries=3 --timeout=90
 
   db:
     image: postgres:16-alpine

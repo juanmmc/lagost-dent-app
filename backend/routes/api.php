@@ -7,6 +7,8 @@ use App\Http\Controllers\Api\PatientController;
 use App\Http\Controllers\Api\DoctorController;
 use App\Http\Controllers\Api\AppointmentController;
 use App\Http\Controllers\Api\AttachmentController;
+use App\Http\Controllers\Api\DeviceTokenController;
+use App\Http\Controllers\Api\PushTestController;
 
 Route::prefix('auth')->group(function () {
     Route::post('/patients/validate', [PatientAuthController::class, 'validatePatient']);
@@ -54,4 +56,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::patch('/appointments/{id}/attend', [AppointmentController::class, 'attend'])->whereUuid('id');
         Route::patch('/appointments/{id}/absent', [AppointmentController::class, 'absent'])->whereUuid('id');
     });
+
+    // Device token management (any authenticated user: patient or doctor)
+    Route::post('/device-tokens', [DeviceTokenController::class, 'register']);
+    Route::delete('/device-tokens', [DeviceTokenController::class, 'deactivate']);
 });
+
+// -------------------------------------------------------------------------
+// Push notification test endpoint — REMOVE OR RESTRICT BEFORE PRODUCTION
+// -------------------------------------------------------------------------
+Route::middleware('auth:sanctum')->post('/push-test', [PushTestController::class, 'send']);

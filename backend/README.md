@@ -11,6 +11,68 @@
 
 API para agenda de citas médicas (Laravel 12), con autenticación por tokens (Sanctum), agenda compartida por consultorio y separación de identidades (`people`), pacientes y doctores.
 
+### Push Notifications (Firebase Cloud Messaging)
+El backend ya incluye integración base con Firebase Cloud Messaging (FCM) para notificaciones push en Android.
+
+- Autenticación real de la app: `people`, con abilities `patient` y `doctor` en Sanctum.
+- Los tokens FCM se guardan por `person_id` en la tabla `device_tokens`.
+- Los eventos de citas despachan notificaciones por cola usando `SendAppointmentPushJob`.
+- El envío se hace con Firebase Admin SDK vía Kreait.
+
+#### Configuración requerida
+1. Descargar la llave privada del proyecto Firebase.
+2. Guardarla en `storage/app/private/`.
+3. Configurar una de estas variables en `.env`:
+	- Opción recomendada:
+		```env
+		FIREBASE_CREDENTIALS_FILE=lagos-dent-v1-firebase-adminsdk-xxxxx.json
+		```
+	- O ruta absoluta completa:
+		```env
+		FIREBASE_CREDENTIALS=C:\Users\PC\Documents\Git\lagos-dent-app\backend\storage\app\private\lagos-dent-v1-firebase-adminsdk-xxxxx.json
+		```
+4. Limpiar caché de configuración:
+	```bash
+	php artisan config:clear
+	```
+
+Si ejecutas el backend con Docker Compose, la credencial no se lee desde tu `.env` local dentro del contenedor. En ese caso, `app` y `queue` montan el JSON como archivo de solo lectura y usan internamente:
+
+```env
+FIREBASE_CREDENTIALS=/var/www/storage/app/private/firebase-admin.json
+```
+
+Importante: el `source` del bind mount en `docker-compose.yml` debe coincidir con el nombre real del archivo JSON en `storage/app/private/`.
+
+#### Worker de cola
+Las notificaciones de citas no se envían dentro del request HTTP; se encolan en base de datos.
+
+En desarrollo debes dejar corriendo:
+
+```bash
+php artisan queue:work
+```
+
+En Docker Compose el worker ya corre como servicio separado (`queue`), que es la opción recomendada para producción y staging porque separa el proceso HTTP del proceso de cola.
+
+```bash
+docker compose up -d --build
+```
+
+Ver logs del worker:
+
+```bash
+docker compose logs -f queue
+```
+
+Eventos que actualmente generan push:
+- Paciente agenda cita: notifica al doctor.
+- Doctor agenda cita: notifica al paciente.
+- Doctor reprograma: notifica al paciente.
+- Doctor confirma: notifica al paciente.
+- Doctor rechaza: notifica al paciente.
+- Doctor marca ausencia: notifica al paciente.
+
 ### Autenticación
 Los endpoints protegidos usan `Authorization: Bearer <token>` con abilities de Sanctum.
 
@@ -235,6 +297,96 @@ Notas:
 	- `multipart/form-data`: `file` (máx 5MB), `type` (string)
 	- `201 Created` → `{ "id": "uuid", "path": "attachments/...", "url": "http://localhost:8000/storage/attachments/..." }`
 
+#### Push Notifications
+- Registrar token FCM: `POST /api/device-tokens` (abilities "patient" o "doctor")
+	- Body JSON:
+		```json
+		{
+			"token": "fcm-device-token",
+			"platform": "android"
+		}
+		```
+	- `200 OK` → `{ "message": "Token registered" }`
+
+- Desactivar token FCM: `DELETE /api/device-tokens` (abilities "patient" o "doctor")
+	- Body JSON:
+		```json
+		{
+			"token": "fcm-device-token"
+		}
+		```
+	- `200 OK` → `{ "message": "Token deactivated" }`
+
+- Prueba manual de push: `POST /api/push-test` (token autenticado)
+	- Body JSON:
+		```json
+		{
+			"token": "fcm-device-token",
+			"title": "Prueba",
+			"body": "Hola desde Laravel",
+			"data": {
+				"appointment_id": "uuid-opcional",
+				"event": "test"
+			}
+		}
+		```
+	- `200 OK` → `{ "message": "Notification sent successfully" }`
+	- Nota: este endpoint es solo para pruebas internas; debe restringirse o eliminarse en producción.
+
+#### Flujo Android → Backend
+Flujo recomendado para la app Android:
+
+1. El usuario inicia sesión en la app con el flujo normal de paciente o doctor.
+2. La app recibe el token Sanctum del backend.
+3. Firebase Messaging entrega un token FCM del dispositivo.
+4. La app envía ese token al backend usando `POST /api/device-tokens` con `Authorization: Bearer <token>`.
+5. El backend guarda el token asociado al `person_id` autenticado.
+6. Cuando cambie el token FCM, la app debe volver a registrar el nuevo valor.
+7. En logout, la app debe llamar `DELETE /api/device-tokens` para desactivar el token actual.
+
+Casos que Android debe implementar:
+- Registro inicial del token después del login.
+- Re-registro del token cuando Firebase lo refresque.
+- Desactivación del token en logout.
+- Manejo de `data payload` para navegar a la pantalla de detalle de cita cuando aplique.
+
+Payload esperado desde Android al registrar token:
+
+```json
+{
+	"token": "fcm-device-token",
+	"platform": "android"
+}
+```
+
+Payload típico enviado por el backend en notificaciones de citas:
+
+```json
+{
+	"appointment_id": "uuid",
+	"event": "confirmed"
+}
+```
+
+Valores actuales de `event` usados por el backend:
+- `pending_confirmation`
+- `confirmed`
+- `rescheduled`
+- `rejected`
+- `absent`
+
+Momento recomendado para llamar el registro de token en Android:
+- Después de un login exitoso.
+- Después de restaurar sesión si ya existe token Sanctum válido.
+- Dentro del callback de refresco de token de Firebase.
+
+Secuencia resumida:
+
+```text
+Login -> obtener bearer token -> obtener FCM token -> POST /api/device-tokens -> recibir pushes
+Logout -> DELETE /api/device-tokens -> invalidar sesión local
+```
+
 ### Estados de Cita
 - 1 Por confirmar, 2 Confirmada, 3 Atendida, 4 Ausente, 5 Rechazada, 6 Cancelada.
 
@@ -243,7 +395,15 @@ Notas:
 composer install
 php artisan migrate
 php artisan db:seed
+php artisan config:clear
+php artisan queue:work
 php artisan serve
+```
+
+Arranque con Docker:
+
+```bash
+docker compose up -d --build
 ```
 
 ### Pruebas
