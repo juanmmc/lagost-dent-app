@@ -110,15 +110,17 @@ Notas:
 			"titular_patient_id": "uuid (opcional)"
 		}
 		```
-	- `201 Created` →
-		```json
-		{
-			"id": "uuid",
-			"name": "string",
-			"phone": "string",
-			"birthdate": "YYYY-MM-DD"
-		}
-		```
+	- Respuestas:
+		- `201 Created` →
+			```json
+			{
+				"id": "uuid",
+				"name": "string",
+				"phone": "string",
+				"birthdate": "YYYY-MM-DD"
+			}
+			```
+		- `422 Unprocessable Entity` → `{ "message": "El número de celular ya está registrado.", "errors": { "phone": ["El número de celular ya está registrado."] } }`
 
 - Ver paciente: `GET /api/patients/{id}` (token con ability "patient")
 	- `200 OK` → igual al recurso de arriba

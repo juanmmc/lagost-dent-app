@@ -62,10 +62,8 @@ class AuthRemoteDataSource {
       'phone': phone,
       'name': name,
       'birthdate': birthdate,
-      'birth_date': birthdate,
       if (titularPatientId != null && titularPatientId.isNotEmpty) ...{
         'titular_patient_id': titularPatientId,
-        'titularPatientId': titularPatientId,
       },
     };
 

@@ -44,15 +44,29 @@ class AuthRepository {
 
   String resolveErrorMessage(Object error) {
     if (error is DioException) {
+      final statusCode = error.response?.statusCode;
       final raw = error.response?.data?.toString().toLowerCase() ?? '';
       if (raw.contains('people_phone_unique') ||
           raw.contains('llave duplicada') ||
-          raw.contains('sqlstate[23505]')) {
+          raw.contains('sqlstate[23505]') ||
+          raw.contains('el numero de celular ya esta registrado') ||
+          raw.contains('el número de celular ya está registrado')) {
         return 'Ese teléfono ya está registrado. Intenta iniciar sesión con ese número.';
       }
 
       final data = error.response?.data;
       if (data is Map<String, dynamic>) {
+        if (statusCode == 422) {
+          final errors = data['errors'];
+          if (errors is Map<String, dynamic>) {
+            final phoneErrors = errors['phone'];
+            if (phoneErrors is List && phoneErrors.isNotEmpty) {
+              return phoneErrors.first.toString();
+            }
+            if (phoneErrors != null) return phoneErrors.toString();
+          }
+        }
+
         final message = data['message'];
         if (message is String && message.isNotEmpty) return message;
 
