@@ -44,12 +44,32 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/doctor/home',
         builder: (context, state) => const DoctorHomeScreen(),
       ),
+      GoRoute(
+        path: '/appointments/:id',
+        builder: (context, state) {
+          final appointmentId = state.pathParameters['id'];
+          final role = authState.session?.role;
+
+          if (appointmentId == null || appointmentId.isEmpty) {
+            return role?.isPatient == true
+                ? const PatientHomeScreen()
+                : const DoctorHomeScreen();
+          }
+
+          if (role?.isPatient == true) {
+            return PatientHomeScreen(initialAppointmentId: appointmentId);
+          }
+
+          return DoctorHomeScreen(initialAppointmentId: appointmentId);
+        },
+      ),
     ],
     redirect: (context, state) {
       final path = state.uri.path;
       final isPatientArea = path.startsWith('/patient/');
       final isDoctorArea = path.startsWith('/doctor/');
-      final isProtected = isPatientArea || isDoctorArea;
+      final isAppointmentsArea = path.startsWith('/appointments/');
+      final isProtected = isPatientArea || isDoctorArea || isAppointmentsArea;
       final isAuthScreen =
           path == '/' ||
           path == '/login/patient' ||

@@ -12,7 +12,9 @@ import '../../../appointments/presentation/controllers/doctor_agenda_controller.
 import '../../../auth/presentation/controllers/auth_controller.dart';
 
 class DoctorHomeScreen extends ConsumerStatefulWidget {
-  const DoctorHomeScreen({super.key});
+  const DoctorHomeScreen({super.key, this.initialAppointmentId});
+
+  final String? initialAppointmentId;
 
   @override
   ConsumerState<DoctorHomeScreen> createState() => _DoctorHomeScreenState();
@@ -21,10 +23,12 @@ class DoctorHomeScreen extends ConsumerStatefulWidget {
 class _DoctorHomeScreenState extends ConsumerState<DoctorHomeScreen> {
   int _index = 0;
   late final ProviderSubscription<DoctorAgendaState> _agendaSubscription;
+  bool _didHandleInitialAppointment = false;
 
   @override
   void initState() {
     super.initState();
+    Future<void>.microtask(_openInitialAppointmentIfNeeded);
     _agendaSubscription = ref.listenManual<DoctorAgendaState>(
       doctorAgendaControllerProvider,
       (previous, next) {
@@ -41,6 +45,39 @@ class _DoctorHomeScreenState extends ConsumerState<DoctorHomeScreen> {
         }
       },
     );
+  }
+
+  Future<void> _openInitialAppointmentIfNeeded() async {
+    final appointmentId = widget.initialAppointmentId;
+    if (_didHandleInitialAppointment || appointmentId == null || appointmentId.isEmpty) {
+      return;
+    }
+    _didHandleInitialAppointment = true;
+
+    try {
+      final repository = ref.read(appointmentsRepositoryProvider);
+      final detailed = await repository.fetchAppointmentDetail(
+        appointmentId: appointmentId,
+      );
+      if (!mounted) return;
+
+      await Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => _DoctorAppointmentDetailScreen(
+            appointmentId: appointmentId,
+            initialAppointment: detailed,
+          ),
+        ),
+      );
+
+      if (!mounted) return;
+      await ref.read(doctorAgendaControllerProvider.notifier).loadAgenda();
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No se pudo abrir el detalle de la cita: $error')),
+      );
+    }
   }
 
   @override

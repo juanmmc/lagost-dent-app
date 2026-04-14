@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/auth/domain/models/user_role.dart';
 import '../../features/auth/presentation/controllers/auth_controller.dart';
+import '../../features/appointments/presentation/controllers/doctor_agenda_controller.dart';
+import '../../features/appointments/presentation/controllers/patient_appointments_controller.dart';
 import '../router/app_router.dart';
 
 final firebaseMessagingServiceProvider =
@@ -125,20 +127,13 @@ class FirebaseMessagingService {
           );
         }
 
-        // TODO: Implement the appointment detail route
-        // Once the appointment detail screen is created, update the route path to:
-        // _ref.read(appRouterProvider).push(
-        //   '/appointments/$appointmentId',
-        //   extra: {'event': event},
-        // );
-        //
-        // For now, navigate to home and refresh appointments
+        // Route to appointment detail entrypoint in router.
+        // The corresponding home screen opens detail from initialAppointmentId.
         final authState = _ref.read(authControllerProvider);
         if (authState.isAuthenticated) {
-          final homeRoute = authState.session!.role.isPatient
-              ? '/patient/home'
-              : '/doctor/home';
-          _ref.read(appRouterProvider).pushReplacement(homeRoute);
+          _ref.read(appRouterProvider).push('/appointments/$appointmentId');
+        } else {
+          _ref.read(appRouterProvider).pushReplacement('/');
         }
 
         // Refresh appointments data to show updated appointment status
@@ -165,9 +160,7 @@ class FirebaseMessagingService {
       if (kDebugMode) {
         debugPrint('🔄 [FCM] Refreshing patient appointments');
       }
-      // TODO: Import and refresh patientAppointmentsControllerProvider
-      // Uncomment when importing:
-      // _ref.refresh(patientAppointmentsControllerProvider);
+      final _ = _ref.refresh(patientAppointmentsControllerProvider);
     } catch (e) {
       if (kDebugMode) {
         debugPrint('⚠️ [FCM] Error refreshing patient appointments: $e');
@@ -178,12 +171,10 @@ class FirebaseMessagingService {
   /// Refresh doctor appointments after notification
   void _refreshDoctorAppointments() {
     try {
-      // Import: lib/features/appointments/presentation/controllers/doctor_agenda_controller.dart
       if (kDebugMode) {
         debugPrint('🔄 [FCM] Refreshing doctor appointments');
       }
-      // Uncomment when need to refresh actual data:
-      // _ref.refresh(doctorAgendaControllerProvider);
+      final _ = _ref.refresh(doctorAgendaControllerProvider);
     } catch (e) {
       if (kDebugMode) {
         debugPrint('⚠️ [FCM] Error refreshing doctor appointments: $e');
